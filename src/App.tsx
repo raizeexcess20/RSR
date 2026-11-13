@@ -6,7 +6,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 
 // Primary high-reliability local asset with seamless remote mirrors:
-const PRIMARY_AUDIO_SRC = '/audio/bg-music.mp3';
+const PRIMARY_AUDIO_SRC = './audio/bg-music.mp3';
 const REMOTE_AUDIO_SRC = 'https://videotourl.com/audio/1794227419367-d268eb0f-7b84-469e-ac23-91689fc1afc7.mp3';
 const LEGACY_AUDIO_SRC = 'https://mp3tourl.com/audio/1794093400733-af13578f-6773-43fe-8165-a372cf5d54a8.mp3';
 const AUDIO_SOURCES = [PRIMARY_AUDIO_SRC, REMOTE_AUDIO_SRC, LEGACY_AUDIO_SRC];
