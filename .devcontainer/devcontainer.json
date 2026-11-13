@@ -1,0 +1,29 @@
+{
+  "name": "RSR Community Hub",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "RSR Live Preview",
+      "onAutoForward": "openBrowser",
+      "elevateIfNeeded": false
+    }
+  },
+  "postCreateCommand": "npm install",
+  "postStartCommand": "npm run dev",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint"
+      ],
+      "settings": {
+        "portsAttributes": {
+          "3000": {
+            "label": "RSR Live Preview",
+            "onAutoForward": "openBrowser"
+          }
+        }
+      }
+    }
+  }
+}

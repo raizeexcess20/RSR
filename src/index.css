@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+html, body {
+  background-color: #000000;
+  margin: 0;
+  overflow-x: clip;
+  touch-action: manipulation;
+  overscroll-behavior-y: contain;
+  -webkit-touch-callout: none;
+}
+
+.overflow-y-auto {
+  touch-action: pan-y;
+}
+
+body {
+  min-height: 380vh;
+}
+
+/* Background Canvas Layer */
+#vortex-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 1;
+}
+
+/* Glassmorphism Panel - Sleek Minimalist Aesthetic */
+.glass-panel {
+  background: rgba(15, 15, 18, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(25, 25, 30, 0.8);
+}
+
+/* Vinyl Disc Animations */
+@keyframes spin-disc {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Gentle, rhythmic musical pulsating core when music plays - flashes less frequently and moves significantly slower */
+@keyframes violent-pulse {
+  0% {
+    transform: scale(0.92);
+    box-shadow: 0 0 3px rgba(0, 242, 254, 0.4);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 0 7px rgba(0, 242, 254, 0.7), 0 0 12px rgba(0, 242, 254, 0.35);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(0.92);
+    box-shadow: 0 0 3px rgba(0, 242, 254, 0.4);
+    opacity: 0.8;
+  }
+}
+
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-spin-disc {
+  animation: spin-disc 6s linear infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 18s linear infinite;
+}
+
+.animate-violent-pulse {
+  animation: violent-pulse 3.8s ease-in-out infinite;
+}
+
+.animate-drop-in {
+  animation: drop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Miniature Black Hole Energy Pulse (subtle breathing cyan outline & contained aura) */
+@keyframes blackhole-energy-pulse {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 1.5px 0.25px rgba(0, 242, 254, 0.4);
+    border-color: rgba(0, 242, 254, 0.55);
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow: 0 0 3px 0.75px rgba(0, 242, 254, 0.7), 0 0 4.5px 1px rgba(0, 242, 254, 0.25);
+    border-color: rgba(0, 242, 254, 0.85);
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 1.5px 0.25px rgba(0, 242, 254, 0.4);
+    border-color: rgba(0, 242, 254, 0.55);
+  }
+}
+
+.animate-blackhole-pulse {
+  animation: blackhole-energy-pulse 1.8s ease-in-out infinite;
+}
+
+.paused-disc {
+  animation-play-state: paused !important;
+}
+
+/* Custom Range Slider */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+input[type=range]::-webkit-slider-track {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+input[type=range]::-moz-range-track {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  margin-top: -3.5px;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+}
+
+input[type=range]::-moz-range-thumb {
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  border: none;
+  background: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+}

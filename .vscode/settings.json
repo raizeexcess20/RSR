@@ -1,0 +1,9 @@
+{
+  "portsAttributes": {
+    "3000": {
+      "label": "RSR Live Preview",
+      "onAutoForward": "openBrowser",
+      "elevateIfNeeded": false
+    }
+  }
+}

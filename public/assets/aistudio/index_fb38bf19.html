@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSR</title>
+    <meta name="description" content="The Main Community Hub">
+    <meta name="theme-color" content="#00f2fe">
+
+    <!-- OpenGraph Social Embeds (Discord, Telegram, Web) -->
+    <meta property="og:title" content="RSR">
+    <meta property="og:description" content="The Main Community Hub">
+    <meta property="og:site_name" content="RSR">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://cdn.discordapp.com/icons/1454504133716349031/5862fe097ae61ac2c28600b7d0bbeecf.png?size=256">
+    <meta property="og:image:width" content="256">
+    <meta property="og:image:height" content="256">
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="RSR">
+    <meta name="twitter:description" content="The Main Community Hub">
+    <meta name="twitter:image" content="https://cdn.discordapp.com/icons/1454504133716349031/5862fe097ae61ac2c28600b7d0bbeecf.png?size=256">
+
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "RSR",
+      "description": "The Main Community Hub"
+    }
+    </script>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            background-color: #000000;
+            margin: 0;
+            overflow-x: hidden;
+            min-height: 340vh;
+        }
+
+        /* Background Canvas Layer */
+        #vortex-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.15;
+            transform: translateY(35vh);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+
+        /* Glassmorphism Panel - Sleek Minimalist Aesthetic */
+        .glass-panel {
+            background: rgba(15, 15, 18, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-panel-hover:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(25, 25, 30, 0.8);
+        }
+
+        /* Vinyl Disc Animations */
+        @keyframes spin-disc {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        /* Gentle, rhythmic musical pulsating core when music plays - flashes less frequently and moves significantly slower */
+        @keyframes violent-pulse {
+            0% { transform: scale(0.92); box-shadow: 0 0 3px rgba(0, 242, 254, 0.4); opacity: 0.8; }
+            50% { transform: scale(1.15); box-shadow: 0 0 7px rgba(0, 242, 254, 0.7), 0 0 12px rgba(0, 242, 254, 0.35); opacity: 0.95; }
+            100% { transform: scale(0.92); box-shadow: 0 0 3px rgba(0, 242, 254, 0.4); opacity: 0.8; }
+        }
+        .animate-spin-disc {
+            animation: spin-disc 6s linear infinite;
+        }
+        .animate-spin-slow {
+            animation: spin-slow 18s linear infinite;
+        }
+        .animate-violent-pulse {
+            animation: violent-pulse 3.8s ease-in-out infinite;
+        }
+        .paused-disc {
+            animation-play-state: paused;
+        }
+
+        /* Miniature Black Hole Energy Pulse (subtle breathing cyan outline & contained aura) */
+        @keyframes blackhole-energy-pulse {
+            0% {
+                transform: scale(0.9);
+                box-shadow: 0 0 1.5px 0.25px rgba(0, 242, 254, 0.4);
+                border-color: rgba(0, 242, 254, 0.55);
+            }
+            50% {
+                transform: scale(1.18);
+                box-shadow: 0 0 3px 0.75px rgba(0, 242, 254, 0.7), 0 0 4.5px 1px rgba(0, 242, 254, 0.25);
+                border-color: rgba(0, 242, 254, 0.85);
+            }
+            100% {
+                transform: scale(0.9);
+                box-shadow: 0 0 1.5px 0.25px rgba(0, 242, 254, 0.4);
+                border-color: rgba(0, 242, 254, 0.55);
+            }
+        }
+        .animate-blackhole-pulse {
+            animation: blackhole-energy-pulse 1.8s ease-in-out infinite;
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-track {
+            height: 3px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -3.5px;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="relative selection:bg-cyan-400 selection:text-black">
+
+    <!-- Interactive Cyan Vortex Background Canvas -->
+    <canvas id="vortex-canvas"></canvas>
+
+    <!-- FIXED TOP-LEFT SLEEK GAMING / MECHANICS GUIDE BUTTON -->
+    <div class="fixed top-6 left-6 z-50 flex items-center gap-2.5">
+        <button id="guide-toggle-btn" onclick="openGuideModal()" 
+           class="glass-panel glass-panel-hover group px-3.5 h-10 rounded-xl flex items-center gap-2.5 text-zinc-300 hover:text-white transition-all duration-300 active:scale-95 shadow-lg border border-white/10 hover:border-white/25 cursor-pointer"
+           title="Interactive Vortex Mechanics Guide & Mobile Sensor Controls"
+           aria-label="Open Interactive Vortex Controls Guide">
+            <i class="fa-solid fa-gamepad text-cyan-400 group-hover:text-cyan-300 text-sm transition-transform duration-300 group-hover:scale-110"></i>
+            <span class="text-xs font-mono font-medium tracking-wide text-zinc-200 group-hover:text-white hidden sm:inline">
+                Mechanics
+            </span>
+            <span id="gyro-indicator" class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00f2fe]" title="Interactive Mechanics Guide"></span>
+        </button>
+    </div>
+
+    <!-- INTERACTIVE MECHANICS GUIDE MODAL -->
+    <div id="guide-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md hidden" onclick="closeGuideModal()">
+        <div class="w-full max-w-md bg-[#09090b]/95 border border-white/15 rounded-2xl p-6 shadow-2xl flex flex-col gap-5 text-left text-zinc-200 relative overflow-hidden" onclick="event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-black border border-white/15 flex items-center justify-center text-cyan-400">
+                        <i class="fa-solid fa-gamepad text-xs"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold tracking-wide text-white">Vortex Mechanics Guide</h3>
+                    </div>
+                </div>
+                <button onclick="closeGuideModal()" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer" aria-label="Close mechanics guide">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Content: Desktop & Mobile Interactions -->
+            <div class="space-y-4 text-xs">
+                <!-- Desktop Section -->
+                <div class="space-y-2">
+                    <div class="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center gap-1.5">
+                        <i class="fa-solid fa-display text-[10px]"></i>
+                        <span>Desktop Controls</span>
+                    </div>
+                    <div class="space-y-1.5 text-zinc-300 text-[11px] leading-relaxed pl-1">
+                        <div class="flex items-start gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0"></span>
+                            <span><strong class="text-white">1 Tap = 1 Comet:</strong> Clicking anywhere immediately births a new comet into orbit at your exact coordinate (holding down streams continuous comets).</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0"></span>
+                            <span><strong class="text-white">Fast Mouse Swipe:</strong> Alters comet velocity and trajectory direction with aerodynamic spatial whoosh sound.</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0"></span>
+                            <span><strong class="text-white">Hyper-Velocity Comets:</strong> Rare, super-fast stray comets occasionally blaze across the screen and out of orbit at breakneck speed—you can intercept and deflect them.</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0"></span>
+                            <span><strong class="text-white">Ctrl + Scroll / Trackpad Pinch:</strong> Dynamically compresses or expands the violent black hole event horizon.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile & Gyroscope Section -->
+                <div class="space-y-2 border-t border-white/10 pt-3">
+                    <div class="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center justify-between">
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-mobile-screen text-[10px]"></i>
+                            <span>Mobile & Sensor Gestures</span>
+                        </span>
+                        <span id="gyro-status-badge" class="text-[9px] text-cyan-300 font-mono bg-cyan-950/70 border border-cyan-800/60 rounded px-1.5 py-0.2 hidden">
+                            Gyroscope Active
+                        </span>
+                    </div>
+                    <div class="space-y-1.5 text-zinc-300 text-[11px] leading-relaxed pl-1">
+                        <div class="flex items-start gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0"></span>
+                            <span><strong class="text-white">Tap Anywhere:</strong> 1 Tap instantly births 1 comet into orbit; hold down to continuously stream comets.</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0"></span>
+                            <span><strong class="text-white">Phone Gyroscope Tilt:</strong> Physically tilting your phone dynamically steers the 3D perspective and vortex parallax in real time.</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0"></span>
+                            <span><strong class="text-white">Two-Finger Pinch:</strong> Pinch inward or outward to scale the central black hole event horizon and tidal shred radius.</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0"></span>
+                            <span><strong class="text-white">Swipe & Intercept:</strong> Fling comets across orbits and deflect incoming hyper-speed comets.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dual Volume Slider Legend -->
+                <div class="space-y-2 border-t border-white/10 pt-3">
+                    <div class="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center gap-1.5">
+                        <i class="fa-solid fa-sliders text-[10px]"></i>
+                        <span>Dual Volume Controller</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                        <div class="bg-black/60 border border-white/10 rounded-xl p-2.5 flex items-center gap-2.5">
+                            <span class="w-3.5 h-3.5 rounded-full bg-white shadow-sm shrink-0"></span>
+                            <div>
+                                <div class="text-white font-medium">White Dot</div>
+                                <div class="text-[10px] text-zinc-400">Background Music</div>
+                            </div>
+                        </div>
+                        <div class="bg-black/60 border border-white/10 rounded-xl p-2.5 flex items-center gap-2.5">
+                            <span class="w-3.5 h-3.5 rounded-full bg-black border border-white/80 ring-1 ring-black shrink-0"></span>
+                            <div>
+                                <div class="text-white font-medium">Black Dot</div>
+                                <div class="text-[10px] text-zinc-400">Interactive SFX</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile sensor permission trigger button -->
+            <div class="pt-2">
+                <button onclick="requestGyroscopePermission()" class="w-full py-2.5 px-3 rounded-xl bg-black hover:bg-zinc-900 border border-white/20 hover:border-white/40 text-xs font-mono text-cyan-400 hover:text-cyan-300 flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer">
+                    <i class="fa-solid fa-compass"></i>
+                    <span>Calibrate</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIXED TOP-RIGHT SLEEK & MINIMALIST SOCIAL BUTTONS -->
+    <div class="fixed top-6 right-6 z-50 flex items-center gap-3">
+        <!-- Discord Icon Button -->
+        <a href="https://discord.gg/JvsWrsCDyK" target="_blank" rel="noopener noreferrer" 
+           class="glass-panel glass-panel-hover w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
+           title="Discord">
+            <svg class="w-4 h-4 fill-current opacity-80 group-hover:opacity-100" viewBox="0 0 127.14 96.36">
+                <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22c2.63-27.42-4.52-51.11-18.9-72.15ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.87,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5.06-12.74,11.44-12.74S96.23,45.91,96.1,53,91.08,65.69,84.69,65.69Z"/>
+            </svg>
+        </a>
+
+        <!-- Telegram Icon Button (Make sure to replace href with a fresh valid invite link if this one is expired) -->
+        <a href="https://t.me/+lRrfWfKoDmljMDU0" target="_blank" rel="noopener noreferrer" 
+           class="glass-panel glass-panel-hover w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
+           title="Telegram">
+            <svg class="w-4 h-4 fill-current opacity-80 group-hover:opacity-100" viewBox="0 0 24 24">
+                <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.16l-2.04 9.61c-.15.68-.56.85-1.13.53l-3.13-2.31-1.51 1.45c-.17.17-.31.31-.64.31l.22-3.18 5.79-5.23c.25-.22-.05-.34-.39-.12l-7.16 4.51-3.08-.96c-.67-.21-.68-.67.14-.99l12.04-4.64c.56-.21 1.05.13.89.82z"/>
+            </svg>
+        </a>
+    </div>
+
+    <!-- VORTEX FULL EXPANSION BUFFER (Scrolling through here expands the vortex to its fullest) -->
+    <div class="h-[120vh] pointer-events-none"></div>
+
+    <!-- COMMUNITY SECTIONS: PLACED DIRECTLY BELOW THE FULLEST VORTEX, SMALL & PERFECTLY CENTERED -->
+    <section class="min-h-[100vh] flex flex-col items-center justify-center pb-28 px-4 relative z-20">
+        <div class="flex flex-row items-center justify-center gap-4 md:gap-6 flex-wrap">
+            
+            <!-- SECTION 1: DISCORD COMMUNITY CARD (SMALL, SLEEK & COMPACT) -->
+            <a href="https://discord.gg/JvsWrsCDyK" target="_blank" rel="noopener noreferrer"
+               class="w-[190px] md:w-[200px] bg-[#08080a]/90 hover:bg-[#101015] border border-white/10 hover:border-white/25 rounded-2xl p-3.5 transition-all duration-300 flex flex-col items-center text-center shadow-2xl group cursor-pointer active:scale-95"
+               title="Join Agartha on Discord">
+                <!-- Server Avatar in circular form with a thick black lining -->
+                <div class="relative mb-2">
+                    <div class="w-11 h-11 rounded-full bg-black border-[3px] border-black ring-1 ring-white/15 overflow-hidden shadow-xl transition-transform duration-300 group-hover:scale-105">
+                        <img id="discord-avatar"
+                             src="https://cdn.discordapp.com/icons/1454504133716349031/5862fe097ae61ac2c28600b7d0bbeecf.png?size=256"
+                             alt="Agartha Server Avatar"
+                             referrerPolicy="no-referrer"
+                             class="w-full h-full object-cover rounded-full" />
+                    </div>
+                </div>
+
+                <!-- Server name and active member count in a circular rectangle -->
+                <div class="flex items-center justify-center gap-2 w-full">
+                    <span id="discord-name" class="text-xs font-semibold text-zinc-100 tracking-wide group-hover:text-white transition-colors">
+                        Agartha
+                    </span>
+
+                    <!-- Circular rectangle badge enclosing active member count with blackhole dot -->
+                    <div class="rounded-full px-2 py-0.5 bg-black border border-white/15 text-[10px] font-mono text-cyan-400 flex items-center gap-1.5 shadow-inner shrink-0">
+                        <span class="relative flex items-center justify-center w-2 h-2 shrink-0" title="Singularity Energy">
+                            <span class="absolute inset-0 rounded-full border border-cyan-400 bg-black animate-blackhole-pulse"></span>
+                            <span class="relative w-1 h-1 rounded-full bg-black z-10"></span>
+                        </span>
+                        <span id="discord-online-count">54 Online</span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- SECTION 2: TELEGRAM COMMUNITY CARD WITH HEAVILY BLURRED GROUP PFP -->
+            <a href="https://t.me/+lRrfWfKoDmljMDU0" target="_blank" rel="noopener noreferrer"
+               class="w-[150px] md:w-[160px] bg-[#08080a]/90 hover:bg-[#101015] border border-white/10 hover:border-white/25 rounded-2xl px-3.5 py-3 transition-all duration-300 flex items-center justify-between gap-2 shadow-2xl group cursor-pointer active:scale-95"
+               title="Join RSR on Telegram">
+                <div class="flex items-center gap-2">
+                    <!-- Group's PFP, heavily blurred -->
+                    <div class="w-4 h-4 rounded-full overflow-hidden shrink-0 border border-black ring-1 ring-white/15 relative bg-black flex items-center justify-center shadow-md">
+                        <img id="telegram-group-avatar"
+                             src="https://cdn.discordapp.com/icons/1454504133716349031/5862fe097ae61ac2c28600b7d0bbeecf.png?size=256"
+                             alt="RSR Group PFP"
+                             referrerPolicy="no-referrer"
+                             class="w-full h-full object-cover rounded-full filter blur-[2px] scale-135 opacity-90 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <span class="text-xs font-semibold text-zinc-100 group-hover:text-white transition-colors tracking-wide">
+                        RSR
+                    </span>
+                </div>
+
+                <!-- Circular rectangle badge enclosing sub count with identical black hole dot -->
+                <div class="rounded-full px-2 py-0.5 bg-black border border-white/15 text-[9px] font-mono text-zinc-300 flex items-center gap-1.5 shadow-inner shrink-0">
+                    <span class="relative flex items-center justify-center w-2 h-2 shrink-0" title="Singularity Energy">
+                        <span class="absolute inset-0 rounded-full border border-cyan-400 bg-black animate-blackhole-pulse"></span>
+                        <span class="relative w-1 h-1 rounded-full bg-black z-10"></span>
+                    </span>
+                    <span>1 sub</span>
+                </div>
+            </a>
+
+        </div>
+    </section>
+
+    <!-- ZONE 3: POST-CARDS SCROLL EXPANSE (CARDS SCROLL COMPLETELY OUT OF VIEW, LEAVING ONLY THE FULL VORTEX) -->
+    <div class="h-[120vh] pointer-events-none"></div>
+
+    <!-- FIXED BOTTOM MUSIC PLAYER BAR WITH DUAL VOLUME CONTROLLER -->
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5" onclick="event.stopPropagation()">
+        <div class="glass-panel px-4 py-2.5 rounded-2xl flex items-center gap-3.5 shadow-2xl border border-white/10">
+            
+            <!-- Circular Vinyl Disc: Slow-spinning outer outline + violent pulsating core when playing -->
+            <button id="vinyl-disc-btn" onclick="toggleDiscMenu(event)" class="relative w-8 h-8 rounded-full p-[2px] flex-shrink-0 cursor-pointer group active:scale-95 transition-transform" title="Click to toggle track progress & info" aria-label="Toggle track navigation">
+                <!-- Outer outline spinning slowly -->
+                <div class="absolute inset-0 rounded-full border border-dashed border-cyan-400/60 group-hover:border-cyan-300 animate-spin-slow pointer-events-none"></div>
+
+                <!-- Inner Vinyl Disc Body -->
+                <div id="vinyl-disc" class="w-full h-full rounded-full bg-zinc-950 border border-white/20 flex items-center justify-center animate-spin-disc paused-disc">
+                    <div class="w-3.5 h-3.5 rounded-full bg-zinc-900 border border-zinc-600 flex items-center justify-center relative">
+                        <div id="disc-core" class="w-1.5 h-1.5 rounded-full bg-cyan-500/50"></div>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Controls: Play/Pause -->
+            <button id="play-pause-btn" onclick="toggleAudio(event)" class="w-8 h-8 rounded-xl glass-panel glass-panel-hover text-zinc-200 hover:text-white flex items-center justify-center transition-all active:scale-90 cursor-pointer shrink-0" aria-label="Play or Pause audio">
+                <i id="play-icon" class="fa-solid fa-play text-[11px] translate-x-[1px]"></i>
+            </button>
+
+            <!-- DUAL VOLUME SLIDER CONTROLLER:
+                - Left: Pure black circular icon with slim white border for interactive sound effects
+                - Track: single track with two independent draggable thumb dots:
+                  * Dot A (Interactive SFX): Pure black dot with black border (controls interactive sounds; completely mutes SFX when far left)
+                  * Dot B (Music Volume): Completely white dot (controls background music; completely mutes music when far left)
+                - Right: completely white "Music" icon -->
+            <div class="flex items-center gap-2.5 border-l border-white/10 pl-3">
+                <!-- SFX Volume Indicator Badge on Left: Pure Black with slim white border -->
+                <div class="w-5 h-5 rounded-full bg-black border border-white/80 flex items-center justify-center shrink-0 shadow-sm" title="Interactive SFX Volume">
+                    <i id="sfx-volume-icon" class="fa-solid fa-volume-low text-[9px] text-white"></i>
+                </div>
+
+                <!-- Single Track with 2 Independent Draggable Dots -->
+                <div id="dual-volume-track" class="relative w-24 h-5 flex items-center cursor-pointer select-none touch-none" title="Dual Volume Slider: Black dot = Interactive SFX, White dot = Music">
+                    <!-- Background Groove Track -->
+                    <div class="w-full h-[3px] bg-white/20 rounded-full"></div>
+
+                    <!-- Dot A: Interactive SFX Thumb (Pure Black Dot with Black Border & subtle contrast ring) -->
+                    <div id="dot-sfx" style="left: 15%;" class="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-black border border-black ring-[1px] ring-white/70 shadow-[0_0_4px_rgba(0,0,0,0.9)] cursor-grab hover:scale-115 transition-transform" title="Interactive SFX Volume: 15% (Drag completely left to mute)"></div>
+
+                    <!-- Dot B: Music Volume Thumb (Completely White Dot) -->
+                    <div id="dot-music" style="left: 5%;" class="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)] border border-white cursor-grab hover:scale-115 transition-transform" title="Music Volume: 5% (Drag completely left to mute)"></div>
+                </div>
+
+                <!-- White Music Icon on Right -->
+                <span title="Music Volume" class="shrink-0 flex items-center">
+                    <i class="fa-solid fa-music text-white text-[11px]"></i>
+                </span>
+            </div>
+        </div>
+
+        <!-- DROPDOWN PROGRESS BAR & DETAILS (Underneath Music Bar, opened by clicking Disc) -->
+        <div id="disc-dropdown" class="w-full max-w-[320px] sm:max-w-[350px] glass-panel rounded-xl py-2 px-3 border border-white/15 shadow-2xl flex flex-col gap-1.5 hidden">
+            <!-- Row 1: Time Display -->
+            <div class="flex items-center justify-between text-[9px] font-mono text-zinc-400 px-0.5 leading-none">
+                <span id="track-current-time" class="text-zinc-200">0:00</span>
+                <span class="text-[8px] uppercase tracking-wider text-zinc-500 font-sans">Track Navigation</span>
+                <span id="track-duration" class="text-zinc-200">0:00</span>
+            </div>
+
+            <!-- Row 2: "<" (Back 5s) | Straight Slim Progress Bar with Outline | ">" (Forward 5s) -->
+            <div class="flex items-center gap-1.5">
+                <button onclick="skipTime(-5)" class="w-4 h-4 rounded-md bg-black/70 hover:bg-zinc-800 border border-white/15 hover:border-white/35 text-zinc-300 hover:text-white flex items-center justify-center text-[9px] font-bold font-mono transition-all active:scale-90 cursor-pointer shrink-0" title="Go back 5 seconds">&lt;</button>
+
+                <div id="progress-bar-container" class="relative flex-1 h-3 flex items-center cursor-pointer select-none touch-none group">
+                    <div class="w-full h-[3px] bg-black/80 border border-white/30 group-hover:border-white/60 rounded-full overflow-hidden relative shadow-inner">
+                        <div id="progress-fill" style="width: 0%;" class="h-full bg-gradient-to-r from-cyan-400 to-white transition-[width] duration-75"></div>
+                    </div>
+                </div>
+
+                <button onclick="skipTime(5)" class="w-4 h-4 rounded-md bg-black/70 hover:bg-zinc-800 border border-white/15 hover:border-white/35 text-zinc-300 hover:text-white flex items-center justify-center text-[9px] font-bold font-mono transition-all active:scale-90 cursor-pointer shrink-0" title="Go forward 5 seconds">&gt;</button>
+            </div>
+
+            <!-- Row 3: "⧪" button to drop down even further -->
+            <div class="flex items-center justify-between">
+                <button onclick="toggleSourceDetails()" class="px-1.5 py-0.5 rounded-md bg-black/70 hover:bg-zinc-800 border border-white/15 hover:border-cyan-400/50 text-zinc-300 hover:text-cyan-300 transition-all flex items-center gap-1 cursor-pointer text-[9px] font-mono group" title="Toggle audio source & credentials">
+                    <span class="text-[11px] leading-none text-cyan-400 group-hover:scale-115 transition-transform">⧪</span>
+                    <span id="source-toggle-text" class="text-[8.5px] text-zinc-400 group-hover:text-zinc-200">Source</span>
+                </button>
+            </div>
+
+            <!-- Sub-dropdown: YouTube link & Alien text -->
+            <div id="source-details" class="border-t border-white/10 pt-2.5 mt-0.5 flex flex-col gap-2 text-left hidden">
+                <div class="flex flex-col gap-1">
+                    <span class="text-[9px] font-mono uppercase text-zinc-500 tracking-wider">Audio Source</span>
+                    <a href="https://youtu.be/N72U-NFu44k?si=4ILzvt0fX_U0orwV" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1.5 break-all group cursor-pointer">
+                        <i class="fa-brands fa-youtube text-red-500 text-xs shrink-0 group-hover:scale-110 transition-transform"></i>
+                        <span class="underline decoration-cyan-500/40 hover:decoration-cyan-400">https://youtu.be/N72U-NFu44k?si=4ILzvt0fX_U0orwV</span>
+                    </a>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="text-[11px] font-mono tracking-widest text-zinc-200 select-all py-1.5 px-2.5 rounded-xl bg-black/80 border border-white/15 break-all shadow-inner">
+                        !¡ꖎᒷᔑᓭᒷ リ𝙹 ᓵ𝙹!¡ǁ∷╎⊣⍑ℸ!
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status message display for audio errors or interaction cues -->
+        <div id="audio-status" class="text-[10px] text-zinc-500 text-center font-mono tracking-wider transition-opacity duration-300 hidden"></div>
+    </div>
+
+    <!-- AUDIO ELEMENT -->
+    <audio id="bg-audio" loop preload="auto" playsinline></audio>
+
+    <!-- JAVASCRIPT SYSTEM -->
+    <script>
+        // Fetch live Discord stats
+        fetch("https://discord.com/api/v9/invites/JvsWrsCDyK?with_counts=true")
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.guild) {
+                    const avatarImg = document.getElementById("discord-avatar");
+                    const nameSpan = document.getElementById("discord-name");
+                    const onlineSpan = document.getElementById("discord-online-count");
+                    if (data.guild.name && nameSpan) nameSpan.textContent = data.guild.name;
+                    if (data.approximate_presence_count && onlineSpan) onlineSpan.textContent = data.approximate_presence_count + " Online";
+                    if (data.guild.id && data.guild.icon && avatarImg) {
+                        avatarImg.src = `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.png?size=256`;
+                    }
+                }
+            })
+            .catch(() => {});
+
+        // Resilient Audio Sources: Primary local file with high-speed remote mirrors
+        const AUDIO_SOURCES = [
+            "/audio/bg-music.mp3",
+            "https://videotourl.com/audio/1794227419367-d268eb0f-7b84-469e-ac23-91689fc1afc7.mp3",
+            "https://mp3tourl.com/audio/1794093400733-af13578f-6773-43fe-8165-a372cf5d54a8.mp3"
+        ];
+        let currentSourceIndex = 0;
+
+        const audio = document.getElementById('bg-audio');
+        const playIcon = document.getElementById('play-icon');
+        const disc = document.getElementById('vinyl-disc');
+        const audioStatus = document.getElementById('audio-status');
+        const guideModal = document.getElementById('guide-modal');
+        const dotMusic = document.getElementById('dot-music');
+        const dotSfx = document.getElementById('dot-sfx');
+        const sfxVolumeIcon = document.getElementById('sfx-volume-icon');
+        const gyroIndicator = document.getElementById('gyro-indicator');
+        const gyroStatusBadge = document.getElementById('gyro-status-badge');
+
+        let musicVolume = 0.05;
+        let sfxVolume = 0.15;
+
+        audio.src = AUDIO_SOURCES[0];
+        audio.volume = musicVolume; // Default low music volume (5%)
+
+        let isPlaying = false;
+        let userExplicitlyPaused = false;
+        let hasEverPlayed = false;
+
+        function openGuideModal() {
+            if (guideModal) guideModal.classList.remove('hidden');
+            const dot = document.getElementById('gyro-indicator');
+            if (dot) dot.classList.remove('animate-pulse');
+            requestGyroscopePermission();
+        }
+
+        function closeGuideModal() {
+            if (guideModal) guideModal.classList.add('hidden');
+        }
+
+        function setMusicVolume(val) {
+            musicVolume = Math.max(0, Math.min(1, val));
+            audio.volume = musicVolume;
+            if (dotMusic) {
+                dotMusic.style.left = (musicVolume * 100) + '%';
+                dotMusic.setAttribute('title', 'Music Volume: ' + Math.round(musicVolume * 100) + '%');
+            }
+        }
+
+        function setSfxVolume(val) {
+            sfxVolume = Math.max(0, Math.min(1, val));
+            if (dotSfx) {
+                dotSfx.style.left = (sfxVolume * 100) + '%';
+                dotSfx.setAttribute('title', 'Interactive SFX Volume: ' + Math.round(sfxVolume * 100) + '%');
+            }
+            if (sfxVolumeIcon) {
+                if (sfxVolume === 0) {
+                    sfxVolumeIcon.className = "fa-solid fa-volume-xmark text-[9px] text-zinc-500";
+                } else if (sfxVolume < 0.5) {
+                    sfxVolumeIcon.className = "fa-solid fa-volume-low text-[9px] text-white";
+                } else {
+                    sfxVolumeIcon.className = "fa-solid fa-volume-high text-[9px] text-white";
+                }
+            }
+        }
+
+        // Dual Volume Slider Drag System on Single Track
+        const dualTrack = document.getElementById('dual-volume-track');
+        let activeThumb = null;
+
+        if (dualTrack) {
+            if (dotSfx) {
+                dotSfx.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    activeThumb = 'sfx';
+                    try { dualTrack.setPointerCapture(e.pointerId); } catch (err) {}
+                });
+            }
+
+            if (dotMusic) {
+                dotMusic.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    activeThumb = 'music';
+                    try { dualTrack.setPointerCapture(e.pointerId); } catch (err) {}
+                });
+            }
+
+            dualTrack.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                const rect = dualTrack.getBoundingClientRect();
+                const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                const distToMusic = Math.abs(clickRatio - musicVolume);
+                const distToSfx = Math.abs(clickRatio - sfxVolume);
+
+                activeThumb = distToMusic <= distToSfx ? 'music' : 'sfx';
+                if (activeThumb === 'music') {
+                    setMusicVolume(clickRatio);
+                } else {
+                    setSfxVolume(clickRatio);
+                    playClickChime(clickRatio);
+                }
+                try { dualTrack.setPointerCapture(e.pointerId); } catch (err) {}
+            });
+
+            dualTrack.addEventListener('pointermove', (e) => {
+                if (!activeThumb) return;
+                e.stopPropagation();
+                const rect = dualTrack.getBoundingClientRect();
+                const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                if (activeThumb === 'music') {
+                    setMusicVolume(ratio);
+                } else {
+                    setSfxVolume(ratio);
+                }
+            });
+
+            const endTrackDrag = (e) => {
+                if (activeThumb === 'sfx') {
+                    playClickChime(sfxVolume);
+                }
+                activeThumb = null;
+                try {
+                    dualTrack.releasePointerCapture(e.pointerId);
+                } catch (err) {}
+            };
+
+            dualTrack.addEventListener('pointerup', endTrackDrag);
+            dualTrack.addEventListener('pointercancel', endTrackDrag);
+        }
+
+        function tryFallbackAudio() {
+            currentSourceIndex = (currentSourceIndex + 1) % AUDIO_SOURCES.length;
+            audio.src = AUDIO_SOURCES[currentSourceIndex];
+            audio.load();
+            audio.play().then(() => {
+                isPlaying = true;
+                playIcon.className = "fa-solid fa-pause text-[11px]";
+                disc.classList.remove('paused-disc');
+                if (audioStatus) audioStatus.classList.add('hidden');
+            }).catch(() => {});
+        }
+
+        function startAudio() {
+            getSharedAudioContext();
+            audio.volume = musicVolume;
+            if (audio.error || !audio.src) {
+                audio.src = AUDIO_SOURCES[currentSourceIndex];
+                audio.load();
+            }
+            audio.play().then(() => {
+                isPlaying = true;
+                userExplicitlyPaused = false;
+                hasEverPlayed = true;
+                playIcon.className = "fa-solid fa-pause text-[11px]";
+                disc.classList.remove('paused-disc');
+                if (audioStatus) {
+                    audioStatus.classList.add('hidden');
+                    audioStatus.textContent = "";
+                }
+            }).catch((error) => {
+                if (!hasEverPlayed && audioStatus) {
+                    audioStatus.textContent = "Click anywhere to enable audio";
+                    audioStatus.classList.remove('hidden');
+                } else {
+                    tryFallbackAudio();
+                }
+            });
+        }
+
+        function setMusicVolume(val) {
+            musicVolume = val <= 0.02 ? 0 : Math.max(0, Math.min(1, val));
+            audio.volume = musicVolume;
+            audio.muted = musicVolume === 0;
+            if (dotMusic) {
+                dotMusic.style.left = (musicVolume * 100) + '%';
+                dotMusic.setAttribute('title', 'Music Volume: ' + Math.round(musicVolume * 100) + '% (Drag left to mute)');
+            }
+        }
+
+        function setSfxVolume(val) {
+            sfxVolume = val <= 0.02 ? 0 : Math.max(0, Math.min(1, val));
+            if (dotSfx) {
+                dotSfx.style.left = (sfxVolume * 100) + '%';
+                dotSfx.setAttribute('title', 'Interactive SFX Volume: ' + Math.round(sfxVolume * 100) + '% (Drag left to mute)');
+            }
+            if (sfxVolumeIcon) {
+                if (sfxVolume === 0) {
+                    sfxVolumeIcon.className = "fa-solid fa-volume-xmark text-[9px] text-zinc-500";
+                } else if (sfxVolume < 0.5) {
+                    sfxVolumeIcon.className = "fa-solid fa-volume-low text-[9px] text-white";
+                } else {
+                    sfxVolumeIcon.className = "fa-solid fa-volume-high text-[9px] text-white";
+                }
+            }
+        }
+
+        function formatTime(secs) {
+            if (!secs || isNaN(secs) || secs < 0) return '0:00';
+            const m = Math.floor(secs / 60);
+            const s = Math.floor(secs % 60);
+            return m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        function skipTime(delta) {
+            if (!audio) return;
+            const dur = audio.duration || 999999;
+            audio.currentTime = Math.max(0, Math.min(dur, audio.currentTime + delta));
+            playPopOutSound(sfxVolume * 0.7);
+        }
+
+        function toggleDiscMenu(e) {
+            if (e) e.stopPropagation();
+            playPopOutSound(sfxVolume);
+            const discDropdown = document.getElementById('disc-dropdown');
+            if (discDropdown) discDropdown.classList.toggle('hidden');
+        }
+
+        function toggleSourceDetails() {
+            const details = document.getElementById('source-details');
+            const toggleText = document.getElementById('source-toggle-text');
+            if (details) {
+                details.classList.toggle('hidden');
+                if (toggleText) toggleText.textContent = details.classList.contains('hidden') ? 'Source' : 'Hide';
+            }
+        }
+
+        // Handle direct audio loading/network errors with auto-recovery
+        audio.addEventListener('error', () => {
+            tryFallbackAudio();
+        });
+
+        audio.addEventListener('play', () => {
+            isPlaying = true;
+            playIcon.className = "fa-solid fa-pause text-[11px]";
+            disc.classList.remove('paused-disc');
+            const discCore = document.getElementById('disc-core');
+            if (discCore) discCore.className = "w-1.5 h-1.5 rounded-full bg-cyan-400 animate-violent-pulse";
+        });
+
+        audio.addEventListener('pause', () => {
+            isPlaying = false;
+            playIcon.className = "fa-solid fa-play text-[11px] translate-x-[1px]";
+            disc.classList.add('paused-disc');
+            const discCore = document.getElementById('disc-core');
+            if (discCore) discCore.className = "w-1.5 h-1.5 rounded-full bg-cyan-500/50";
+        });
+
+        audio.addEventListener('timeupdate', () => {
+            const curTime = document.getElementById('track-current-time');
+            const durTime = document.getElementById('track-duration');
+            const fill = document.getElementById('progress-fill');
+            if (curTime) curTime.textContent = formatTime(audio.currentTime);
+            if (durTime && audio.duration) durTime.textContent = formatTime(audio.duration);
+            if (fill && audio.duration) {
+                fill.style.width = ((audio.currentTime / audio.duration) * 100) + '%';
+            }
+        });
+
+        audio.addEventListener('loadedmetadata', () => {
+            const durTime = document.getElementById('track-duration');
+            if (durTime && audio.duration) durTime.textContent = formatTime(audio.duration);
+        });
+
+        // Click on progress bar to seek
+        const progressContainer = document.getElementById('progress-bar-container');
+        if (progressContainer) {
+            progressContainer.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                const rect = progressContainer.getBoundingClientRect();
+                const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                if (audio.duration) {
+                    audio.currentTime = ratio * audio.duration;
+                }
+            });
+        }
+
+        function toggleAudio(e) {
+            if (e && e.stopPropagation) {
+                e.stopPropagation();
+            }
+            if (!audio.paused && !audio.ended) {
+                userExplicitlyPaused = true;
+                audio.pause();
+            } else {
+                userExplicitlyPaused = false;
+                startAudio();
+            }
+        }
+
+        // --- CELESTIAL WEB AUDIO PROCEDURAL SYNTHESIS ---
+        let globalAudioCtx = null;
+
+        function getSharedAudioContext() {
+            if (!globalAudioCtx && typeof window !== 'undefined') {
+                const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtxClass) {
+                    globalAudioCtx = new AudioCtxClass();
+                }
+            }
+            if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
+                globalAudioCtx.resume().catch(() => {});
+            }
+            return globalAudioCtx;
+        }
+
+        // Procedural resonant chime on click
+        function playClickChime(volFactor) {
+            if (volFactor <= 0.001) return;
+            try {
+                const ctx = getSharedAudioContext();
+                if (!ctx) return;
+                const t = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+
+                const freqs = [880, 987.77, 1174.66, 1318.51, 1567.98, 1760];
+                const baseFreq = freqs[Math.floor(Math.random() * freqs.length)];
+
+                osc.type = Math.random() > 0.5 ? 'sine' : 'triangle';
+                osc.frequency.setValueAtTime(baseFreq, t);
+                osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.04, t + 0.12);
+
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(baseFreq, t);
+                filter.Q.setValueAtTime(4.0, t);
+
+                const targetGain = Math.max(0.001, Math.min(0.18, volFactor * 0.16));
+                gain.gain.setValueAtTime(targetGain, t);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(t);
+                osc.stop(t + 0.23);
+            } catch (e) {}
+        }
+
+        // Cosmic spatial pitch glide / whoosh on high-velocity comet swipe
+        let lastWhooshTime = 0;
+        function playSwipeWhoosh(speed, volFactor) {
+            if (volFactor <= 0.001) return;
+            const now = performance.now();
+            if (now - lastWhooshTime < 130) return;
+            lastWhooshTime = now;
+
+            try {
+                const ctx = getSharedAudioContext();
+                if (!ctx) return;
+                const t = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+
+                osc.type = 'sine';
+                const startFreq = 260 + Math.min(240, speed * 9);
+                osc.frequency.setValueAtTime(startFreq, t);
+                osc.frequency.exponentialRampToValueAtTime(75, t + 0.28);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(startFreq * 1.5, t);
+                filter.frequency.exponentialRampToValueAtTime(90, t + 0.28);
+
+                const targetGain = Math.max(0.001, Math.min(0.16, volFactor * 0.13));
+                gain.gain.setValueAtTime(targetGain, t);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(t);
+                osc.stop(t + 0.3);
+            } catch (e) {}
+        }
+
+        // Gravitational sub-bass drone / rumble on black hole tidal disruption
+        let lastRumbleTime = 0;
+        function playBlackHoleRumble(volFactor) {
+            if (volFactor <= 0.001) return;
+            const now = performance.now();
+            if (now - lastRumbleTime < 240) return;
+            lastRumbleTime = now;
+
+            try {
+                const ctx = getSharedAudioContext();
+                if (!ctx) return;
+                const t = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+
+                osc.type = 'sawtooth';
+                const startFreq = 68 + Math.random() * 22;
+                osc.frequency.setValueAtTime(startFreq, t);
+                osc.frequency.exponentialRampToValueAtTime(36, t + 0.38);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(110, t);
+
+                const targetGain = Math.max(0.001, Math.min(0.14, volFactor * 0.11));
+                gain.gain.setValueAtTime(targetGain, t);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(t);
+                osc.stop(t + 0.4);
+            } catch (e) {}
+        }
+
+        // Gentle celestial ping when hold-spawning a comet
+        function playCometSpawnPing(volFactor) {
+            if (volFactor <= 0.001) return;
+            try {
+                const ctx = getSharedAudioContext();
+                if (!ctx) return;
+                const t = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(1420 + Math.random() * 140, t);
+                osc.frequency.exponentialRampToValueAtTime(1080, t + 0.16);
+
+                const targetGain = Math.max(0.001, Math.min(0.12, volFactor * 0.09));
+                gain.gain.setValueAtTime(targetGain, t);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(t);
+                osc.stop(t + 0.18);
+            } catch (e) {}
+        }
+
+        window.addEventListener('load', () => {
+            startAudio();
+        });
+
+        // User-interaction listeners to handle autoplay restrictions gracefully without overriding explicit pause
+        ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+            window.addEventListener(evt, () => {
+                getSharedAudioContext();
+                if (userExplicitlyPaused) return;
+                if (!isPlaying && audio.paused) {
+                    startAudio();
+                }
+            }, { passive: true });
+        });
+
+        // --- CYAN VORTEX CANVAS ANIMATION ---
+        const canvas = document.getElementById('vortex-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height, centerX, centerY;
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            centerX = width / 2;
+            centerY = height / 2;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Dynamic Interaction State
+        let targetOffsetX = 0;
+        let targetOffsetY = 0;
+        let currentOffsetX = 0;
+        let currentOffsetY = 0;
+        let vortexImpulseSpeed = 0;
+
+        // Phone Gyroscope Perspective 3D Tilt State
+        let targetGyroTiltX = 0;
+        let targetGyroTiltY = 0;
+        let gyroTiltX = 0;
+        let gyroTiltY = 0;
+
+        function handleDeviceOrientation(e) {
+            if (e.gamma !== null || e.beta !== null) {
+                if (gyroIndicator) gyroIndicator.classList.remove('hidden');
+                if (gyroStatusBadge) gyroStatusBadge.classList.remove('hidden');
+            }
+            const gamma = e.gamma || 0;
+            const beta = e.beta || 0;
+            targetGyroTiltX = Math.max(-40, Math.min(40, gamma * 0.9));
+            targetGyroTiltY = Math.max(-30, Math.min(30, (beta - 45) * 0.8));
+        }
+
+        window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
+
+        // Request iOS 13+ DeviceOrientation permission if required
+        async function requestGyroscopePermission() {
+            try {
+                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    const response = await DeviceOrientationEvent.requestPermission();
+                    if (response === 'granted') {
+                        if (gyroIndicator) gyroIndicator.classList.remove('hidden');
+                        if (gyroStatusBadge) gyroStatusBadge.classList.remove('hidden');
+                    }
+                } else {
+                    if (gyroIndicator) gyroIndicator.classList.remove('hidden');
+                    if (gyroStatusBadge) gyroStatusBadge.classList.remove('hidden');
+                }
+            } catch (err) {}
+        }
+
+        // Pointer Interaction State
+        let isPointerDown = false;
+        let holdStartTime = 0;
+        let lastCometSpawnTime = 0;
+        let pointerX = 0;
+        let pointerY = 0;
+        let prevPointerX = 0;
+        let prevPointerY = 0;
+        let prevMoveTime = performance.now();
+
+        const comets = [];
+        const breakupDebris = [];
+        const ripples = [];
+        const sparks = [];
+        const trail = [];
+        const birthAuras = [];
+
+        // Color palette variations for clicks & sparks
+        const CYAN_PALETTE = ['#00f2fe', '#38bdf8', '#67e8f9', '#a5f3fc', '#e0ffff'];
+
+        // Initialize base population of comets
+        const initialCometCount = 75;
+        for (let i = 0; i < initialCometCount; i++) {
+            const initSize = Math.random() * 2 + 0.6;
+            comets.push({
+                angle: Math.random() * Math.PI * 2,
+                radius: Math.random() * Math.max(width, height) * 0.5 + 20,
+                originalRadius: Math.random() * Math.max(width, height) * 0.5 + 20,
+                speed: 0.002 + Math.random() * 0.003,
+                size: initSize,
+                originalSize: initSize,
+                alpha: Math.random() * 0.5 + 0.25,
+                perturbX: 0,
+                perturbY: 0,
+                isBreakingApart: false,
+                destructionProgress: 0,
+                color: CYAN_PALETTE[Math.floor(Math.random() * CYAN_PALETTE.length)],
+                isPermanent: false
+            });
+        }
+
+        let vortexRotation = 0;
+        let blackHoleRotation = 0;
+
+        // Multi-Touch Two-Finger Pinch & Trackpad Scaling for Event Horizon
+        let currentHorizonScale = 1.0;
+        let targetHorizonScale = 1.0;
+        let isPinching = false;
+        let initialPinchDistance = 0;
+        let initialPinchScale = 1.0;
+
+        window.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                isPinching = true;
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                initialPinchDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+                initialPinchScale = targetHorizonScale;
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && isPinching) {
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+                if (initialPinchDistance > 0) {
+                    const pinchRatio = currentDist / initialPinchDistance;
+                    targetHorizonScale = Math.max(0.4, Math.min(2.8, initialPinchScale * pinchRatio));
+                }
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                isPinching = false;
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchcancel', (e) => {
+            if (e.touches.length < 2) {
+                isPinching = false;
+            }
+        }, { passive: true });
+
+        window.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                const delta = -e.deltaY * 0.005;
+                targetHorizonScale = Math.max(0.4, Math.min(2.8, targetHorizonScale + delta));
+            }
+        }, { passive: false });
+
+        // Spawn comet at contact point (hold-to-create)
+        function spawnCometAtPoint(px, py) {
+            const dynamicCenterX = centerX + currentOffsetX;
+            const dynamicCenterY = centerY + currentOffsetY;
+
+            const rx = (px - dynamicCenterX) / 1.2;
+            const ry = (py - dynamicCenterY) / 0.7;
+            const r = Math.max(15, Math.hypot(rx, ry));
+            const ang = Math.atan2(ry, rx) - vortexRotation;
+
+            const newSize = Math.random() * 2.2 + 0.8;
+            comets.push({
+                angle: ang,
+                radius: r,
+                originalRadius: r,
+                speed: 0.0025 + Math.random() * 0.003,
+                size: newSize,
+                originalSize: newSize,
+                alpha: Math.random() * 0.5 + 0.4,
+                perturbX: 0,
+                perturbY: 0,
+                isBreakingApart: false,
+                destructionProgress: 0,
+                color: CYAN_PALETTE[Math.floor(Math.random() * CYAN_PALETTE.length)],
+                isPermanent: true
+            });
+
+            // Birth aura at spawn point
+            birthAuras.push({
+                x: px,
+                y: py,
+                radius: 3,
+                alpha: 0.85
+            });
+
+            // Synthesized celestial sound effect for comet birth
+            playCometSpawnPing(sfxVolume);
+        }
+
+        window.addEventListener('pointerdown', (e) => {
+            isPointerDown = true;
+            holdStartTime = performance.now();
+            lastCometSpawnTime = performance.now();
+            pointerX = e.clientX;
+            pointerY = e.clientY;
+            prevPointerX = e.clientX;
+            prevPointerY = e.clientY;
+            prevMoveTime = performance.now();
+
+            // Synthesized celestial sound effect for click
+            playClickChime(sfxVolume);
+
+            // Procedural Click Variations - Slightly smaller and sharper as requested
+            const clickColor = CYAN_PALETTE[Math.floor(Math.random() * CYAN_PALETTE.length)];
+            const maxR = 38 + Math.random() * 26; // 38px to 64px (compact, tighter ripple)
+            const spd = 2.0 + Math.random() * 1.4; // 2.0 to 3.4
+            const lWidth = 1.0 + Math.random() * 0.6; // 1.0 to 1.6
+
+            // 1. Click Ripple with refined smaller radius
+            ripples.push({
+                x: e.clientX,
+                y: e.clientY,
+                radius: 3,
+                maxRadius: maxR,
+                alpha: 0.9,
+                speed: spd,
+                lineWidth: lWidth,
+                color: clickColor
+            });
+
+            // 2. Click Micro-Sparks - tighter radius and smaller count
+            const sparkCount = 4 + Math.floor(Math.random() * 5); // 4 to 8 sparks
+            for (let i = 0; i < sparkCount; i++) {
+                const ang = (Math.PI * 2 * i) / sparkCount + (Math.random() - 0.5) * 0.5;
+                const sparkSpeed = Math.random() * 1.8 + 0.8;
+                sparks.push({
+                    x: e.clientX,
+                    y: e.clientY,
+                    vx: Math.cos(ang) * sparkSpeed,
+                    vy: Math.sin(ang) * sparkSpeed,
+                    alpha: 0.9,
+                    size: Math.random() * 1.4 + 0.6,
+                    color: CYAN_PALETTE[Math.floor(Math.random() * CYAN_PALETTE.length)]
+                });
+            }
+
+            // 3. Rotation momentum impulse
+            vortexImpulseSpeed += 0.003 + Math.random() * 0.002;
+        }, { passive: true });
+
+        window.addEventListener('pointermove', (e) => {
+            const now = performance.now();
+            const dt = Math.max(1, now - prevMoveTime);
+            pointerX = e.clientX;
+            pointerY = e.clientY;
+
+            const halfW = width / 2;
+            const halfH = height / 2;
+            const normalizedX = (e.clientX - halfW) / (halfW || 1);
+            const normalizedY = (e.clientY - halfH) / (halfH || 1);
+            targetOffsetX = Math.max(-25, Math.min(25, normalizedX * 25));
+            targetOffsetY = Math.max(-18, Math.min(18, normalizedY * 18));
+
+            // Calculate swipe direction and velocity
+            const dx = e.clientX - prevPointerX;
+            const dy = e.clientY - prevPointerY;
+            const dist = Math.hypot(dx, dy);
+            const swipeSpeed = (dist / dt) * 16;
+
+            if (dist > 3) {
+                // Visual swipe trail
+                trail.push({
+                    x: e.clientX,
+                    y: e.clientY,
+                    alpha: 0.65,
+                    size: Math.min(4.5, 1.8 + swipeSpeed * 0.12)
+                });
+
+                // PHYSICS DEFLECTION: Fast swiping MUST change speed and direction of comets
+                const dynamicCenterX = centerX + currentOffsetX;
+                const dynamicCenterY = centerY + currentOffsetY;
+                const swipeDirX = dx / (dist || 1);
+                const swipeDirY = dy / (dist || 1);
+                const isFastSwipe = swipeSpeed > 4.5;
+                const influenceRadius = isFastSwipe ? Math.min(350, 220 + swipeSpeed * 15) : 180;
+
+                if (isFastSwipe) {
+                    playSwipeWhoosh(swipeSpeed, sfxVolume);
+                }
+
+                comets.forEach((p) => {
+                    const cx = dynamicCenterX + p.perturbX + Math.cos(p.angle + vortexRotation) * p.radius * 1.2;
+                    const cy = dynamicCenterY + p.perturbY + Math.sin(p.angle + vortexRotation) * (p.radius * 0.7);
+
+                    const cDist = Math.hypot(e.clientX - cx, e.clientY - cy);
+                    if (cDist < influenceRadius) {
+                        const rawForce = 1 - cDist / influenceRadius;
+                        const force = Math.pow(rawForce, 1.3);
+
+                        const rx = cx - dynamicCenterX;
+                        const ry = cy - dynamicCenterY;
+                        const rDist = Math.hypot(rx, ry) || 1;
+                        const tangentialCross = (rx * swipeDirY - ry * swipeDirX) / rDist;
+                        const radialDot = (swipeDirX * rx + swipeDirY * ry) / rDist;
+
+                        if (isFastSwipe) {
+                            // FAST SWIPE: MUST change speed and direction of comets
+                            if (Math.abs(tangentialCross) > 0.08) {
+                                const targetDir = Math.sign(tangentialCross);
+                                const speedBoost = 0.0035 + Math.min(0.016, swipeSpeed * 0.0006);
+                                p.speed = targetDir * (Math.abs(p.speed) * 0.7 + speedBoost);
+                            } else {
+                                p.speed = Math.sign(p.speed || 1) * (Math.abs(p.speed) * 1.4 + 0.003);
+                            }
+
+                            const flingForce = force * Math.min(34, 14 + swipeSpeed * 0.8);
+                            p.perturbX += swipeDirX * flingForce;
+                            p.perturbY += swipeDirY * flingForce;
+
+                            p.radius = Math.max(12, p.radius + radialDot * force * Math.min(45, 14 + swipeSpeed * 0.8));
+                        } else {
+                            p.perturbX += swipeDirX * force * 10;
+                            p.perturbY += swipeDirY * force * 10;
+                            p.radius = Math.max(12, p.radius + radialDot * force * 6);
+                            p.speed += tangentialCross * force * 0.0008;
+                        }
+                    }
+                });
+
+                vortexImpulseSpeed += Math.min(0.003, dist * 0.00009);
+            }
+
+            prevPointerX = e.clientX;
+            prevPointerY = e.clientY;
+            prevMoveTime = now;
+        }, { passive: true });
+
+        window.addEventListener('pointerup', () => {
+            isPointerDown = false;
+        }, { passive: true });
+
+        window.addEventListener('pointercancel', () => {
+            isPointerDown = false;
+        }, { passive: true });
+
+        window.addEventListener('pointerleave', () => {
+            isPointerDown = false;
+            targetOffsetX = 0;
+            targetOffsetY = 0;
+        }, { passive: true });
+
+        function drawVortex() {
+            const now = performance.now();
+
+            // Smooth lerp for pinch event horizon scale
+            currentHorizonScale += (targetHorizonScale - currentHorizonScale) * 0.08;
+            if (!isPinching) {
+                targetHorizonScale += (1.0 - targetHorizonScale) * 0.015;
+            }
+
+            const BASE_EVENT_HORIZON_R = 9;
+            const BASE_TIDAL_DISRUPTION_R = 38;
+
+            const EVENT_HORIZON_R = BASE_EVENT_HORIZON_R * currentHorizonScale;
+            const TIDAL_DISRUPTION_R = BASE_TIDAL_DISRUPTION_R * currentHorizonScale;
+
+            // HOLD TO CREATE COMETS: If holding down, spawn comets very slowly on exact point of contact
+            if (isPointerDown && now - holdStartTime > 200) {
+                if (now - lastCometSpawnTime > 160) {
+                    lastCometSpawnTime = now;
+                    if (comets.length < 180) {
+                        spawnCometAtPoint(pointerX, pointerY);
+                    }
+                }
+            }
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+            ctx.fillRect(0, 0, width, height);
+
+            currentOffsetX += (targetOffsetX - currentOffsetX) * 0.04;
+            currentOffsetY += (targetOffsetY - currentOffsetY) * 0.04;
+            gyroTiltX += (targetGyroTiltX - gyroTiltX) * 0.06;
+            gyroTiltY += (targetGyroTiltY - gyroTiltY) * 0.06;
+
+            const dynamicCenterX = centerX + currentOffsetX + gyroTiltX;
+            const dynamicCenterY = centerY + currentOffsetY + gyroTiltY;
+
+            vortexRotation += 0.0015 + vortexImpulseSpeed + gyroTiltX * 0.00004;
+            vortexImpulseSpeed *= 0.95;
+
+            // Black hole independent rotation: very very slow, counter-direction
+            blackHoleRotation -= 0.00045;
+
+            const maxDimension = Math.max(width, height) * 0.5;
+
+            // 1. Concentric Vortex Ellipses with phone gyroscope 3D perspective warp
+            const perspectiveScaleX = 1.2 + (gyroTiltX * 0.003);
+            const perspectiveScaleY = Math.max(0.45, 0.7 + (gyroTiltY * 0.003));
+
+            for (let r = 40; r < maxDimension; r += 80) {
+                ctx.beginPath();
+                ctx.ellipse(dynamicCenterX, dynamicCenterY, r * perspectiveScaleX, r * perspectiveScaleY, vortexRotation, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(0, 242, 254, ${0.04 + (1 - r / (width * 0.5)) * 0.08})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // 2. VIOLENT BLACK HOLE CORE (Singularity with Vibrations & Independent Slow Rotation)
+            // Violent slight vibrations: rapid gravitational tremor displacement
+            const bhVibrationIntensity = 1.6;
+            const bhJitterX = (Math.random() - 0.5) * bhVibrationIntensity;
+            const bhJitterY = (Math.random() - 0.5) * bhVibrationIntensity;
+            const bhCenterX = dynamicCenterX + bhJitterX;
+            const bhCenterY = dynamicCenterY + bhJitterY;
+
+            // Violent pulsating outer gravitational distortion glow
+            const pulseR = TIDAL_DISRUPTION_R + Math.sin(now * 0.035) * 2.8 + (Math.random() - 0.5) * 1.4;
+            ctx.beginPath();
+            ctx.arc(bhCenterX, bhCenterY, pulseR, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 242, 254, 0.03)';
+            ctx.fill();
+
+            // Relativistic ergosphere / accretion ring rotating very very slowly in counter-direction
+            ctx.save();
+            ctx.translate(bhCenterX, bhCenterY);
+            ctx.rotate(blackHoleRotation);
+
+            // 4 Relativistic photon arcs with counter-rotation
+            for (let a = 0; a < 4; a++) {
+                const arcStart = (Math.PI / 2) * a;
+                ctx.beginPath();
+                ctx.arc(0, 0, (EVENT_HORIZON_R + 6) + Math.sin(now * 0.02 + a) * 0.8, arcStart, arcStart + Math.PI * 0.35);
+                ctx.strokeStyle = `rgba(0, 242, 254, ${0.35 + (a % 2 === 0 ? 0.25 : 0.05)})`;
+                ctx.lineWidth = 1.5;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#00f2fe';
+                ctx.stroke();
+            }
+
+            // Gravitational distortion spikes rotating counter to the vortex
+            for (let s = 0; s < 6; s++) {
+                const spikeAng = (Math.PI / 3) * s;
+                const innerR = EVENT_HORIZON_R + 2;
+                const outerR = EVENT_HORIZON_R + 8 * currentHorizonScale + Math.random() * 4;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(spikeAng) * innerR, Math.sin(spikeAng) * innerR);
+                ctx.lineTo(Math.cos(spikeAng) * outerR, Math.sin(spikeAng) * outerR);
+                ctx.strokeStyle = 'rgba(0, 242, 254, 0.4)';
+                ctx.lineWidth = 0.9;
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Violent vibrating inner event horizon ring (high-frequency electric jitter)
+            const horizonTremor = (Math.random() - 0.5) * 0.8;
+            ctx.beginPath();
+            ctx.arc(bhCenterX, bhCenterY, EVENT_HORIZON_R + 2.5 + horizonTremor, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(0, 242, 254, 0.85)';
+            ctx.lineWidth = 1.5;
+            ctx.shadowBlur = 14;
+            ctx.shadowColor = '#00f2fe';
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Pure black singularity core with subtle micro-vibrating silhouette
+            ctx.beginPath();
+            ctx.arc(bhCenterX, bhCenterY, EVENT_HORIZON_R, 0, Math.PI * 2);
+            ctx.fillStyle = '#000000';
+            ctx.fill();
+
+            // 3. COMETS SIMULATION & RENDERING
+            for (let i = comets.length - 1; i >= 0; i--) {
+                const p = comets[i];
+
+                p.angle += p.speed;
+                p.perturbX *= 0.96;
+                p.perturbY *= 0.96;
+
+                // Black Hole Gravity: Natural orbital decay
+                if (!p.isBreakingApart) {
+                    p.radius -= 0.16;
+                }
+
+                // TIDAL DISRUPTION: If comet gets close to violent center, break apart
+                if (p.radius < TIDAL_DISRUPTION_R) {
+                    p.isBreakingApart = true;
+                    p.destructionProgress += 0.035;
+
+                    // Synthesized sub-bass gravitational rumble
+                    playBlackHoleRumble(sfxVolume);
+
+                    p.speed = Math.sign(p.speed || 1) * Math.min(0.05, Math.abs(p.speed) * 1.05);
+                    p.radius -= 0.45;
+
+                    // Micro breakup debris shards toward vibrating singularity
+                    if (Math.random() < 0.65) {
+                        const curX = dynamicCenterX + p.perturbX + Math.cos(p.angle + vortexRotation) * p.radius * 1.2;
+                        const curY = dynamicCenterY + p.perturbY + Math.sin(p.angle + vortexRotation) * (p.radius * 0.7);
+                        const toSingularityX = bhCenterX - curX;
+                        const toSingularityY = bhCenterY - curY;
+                        const toDist = Math.hypot(toSingularityX, toSingularityY) || 1;
+
+                        breakupDebris.push({
+                            x: curX,
+                            y: curY,
+                            vx: (toSingularityX / toDist) * (Math.random() * 2 + 1) + (Math.random() - 0.5) * 1.5,
+                            vy: (toSingularityY / toDist) * (Math.random() * 2 + 1) + (Math.random() - 0.5) * 1.5,
+                            alpha: p.alpha * 0.9,
+                            size: Math.max(0.6, p.size * 0.5),
+                            color: p.color
+                        });
+                    }
+
+                    p.size = Math.max(0.3, p.size * 0.95);
+                    p.alpha = Math.max(0.01, p.alpha * 0.93);
+                }
+
+                // EVENT HORIZON CONSUMPTION
+                if (p.radius <= EVENT_HORIZON_R || p.alpha <= 0.02) {
+                    if (p.isPermanent && comets.length > initialCometCount) {
+                        comets.splice(i, 1);
+                        continue;
+                    } else {
+                        p.radius = maxDimension;
+                        p.originalRadius = maxDimension;
+                        p.angle = Math.random() * Math.PI * 2;
+                        p.size = p.originalSize;
+                        p.alpha = Math.random() * 0.5 + 0.25;
+                        p.speed = 0.002 + Math.random() * 0.003;
+                        p.perturbX = 0;
+                        p.perturbY = 0;
+                        p.isBreakingApart = false;
+                        p.destructionProgress = 0;
+                    }
+                }
+
+                const x = dynamicCenterX + p.perturbX + Math.cos(p.angle + vortexRotation) * p.radius * 1.2;
+                const y = dynamicCenterY + p.perturbY + Math.sin(p.angle + vortexRotation) * (p.radius * 0.7);
+
+                // Velocity tail
+                const tailAngle = p.angle + vortexRotation - p.speed * 4;
+                const tailX = dynamicCenterX + p.perturbX + Math.cos(tailAngle) * (p.radius + 1.2) * 1.2;
+                const tailY = dynamicCenterY + p.perturbY + Math.sin(tailAngle) * (p.radius + 0.7) * 0.7;
+
+                ctx.beginPath();
+                ctx.moveTo(tailX, tailY);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = p.color;
+                ctx.globalAlpha = p.alpha * 0.4;
+                ctx.lineWidth = Math.max(0.8, p.size * 0.8);
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+
+                // Comet Head
+                ctx.beginPath();
+                ctx.arc(x, y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // 4. BREAKUP DEBRIS SHARDS
+            for (let i = breakupDebris.length - 1; i >= 0; i--) {
+                const d = breakupDebris[i];
+                d.x += d.vx;
+                d.y += d.vy;
+                d.alpha *= 0.92;
+                d.size *= 0.96;
+
+                ctx.beginPath();
+                ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+                ctx.fillStyle = d.color;
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = d.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                if (d.alpha < 0.02 || Math.hypot(d.x - dynamicCenterX, d.y - dynamicCenterY) < EVENT_HORIZON_R) {
+                    breakupDebris.splice(i, 1);
+                }
+            }
+
+            // 5. BIRTH AURAS
+            for (let i = birthAuras.length - 1; i >= 0; i--) {
+                const a = birthAuras[i];
+                ctx.beginPath();
+                ctx.arc(a.x, a.y, a.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(0, 242, 254, ${a.alpha})`;
+                ctx.lineWidth = 1.5;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#00f2fe';
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                a.radius += 1.8;
+                a.alpha *= 0.9;
+                if (a.alpha < 0.02) {
+                    birthAuras.splice(i, 1);
+                }
+            }
+
+            // 6. SWIPE TRAILS
+            for (let i = trail.length - 1; i >= 0; i--) {
+                const pt = trail[i];
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 242, 254, ${pt.alpha})`;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#00f2fe';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                pt.alpha *= 0.91;
+                if (pt.alpha < 0.02) {
+                    trail.splice(i, 1);
+                }
+            }
+
+            // 7. CLICK SHOCKWAVES
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const rip = ripples[i];
+                ctx.beginPath();
+                ctx.arc(rip.x, rip.y, rip.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = rip.color;
+                ctx.globalAlpha = rip.alpha;
+                ctx.lineWidth = rip.lineWidth;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = rip.color;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1.0;
+
+                rip.radius += rip.speed;
+                rip.alpha *= 0.93;
+                if (rip.alpha < 0.02 || rip.radius > rip.maxRadius) {
+                    ripples.splice(i, 1);
+                }
+            }
+
+            // 8. CLICK MICRO-SPARKS
+            for (let i = sparks.length - 1; i >= 0; i--) {
+                const sp = sparks[i];
+                ctx.beginPath();
+                ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
+                ctx.fillStyle = sp.color;
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = sp.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                sp.x += sp.vx;
+                sp.y += sp.vy;
+                sp.vx *= 0.95;
+                sp.vy *= 0.95;
+                sp.alpha *= 0.93;
+
+                if (sp.alpha < 0.02) {
+                    sparks.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(drawVortex);
+        }
+        drawVortex();
+
+        // --- SCROLL REVEAL / EXPAND BEHAVIOR ---
+        window.addEventListener('scroll', () => {
+            const vortexFullThreshold = window.innerHeight * 1.0;
+            const vortexProgress = Math.min(1, Math.max(0, window.scrollY / vortexFullThreshold));
+            const currentOpacity = 0.15 + (vortexProgress * 0.85);
+            const currentTranslateY = 35 - (vortexProgress * 35);
+
+            canvas.style.opacity = currentOpacity.toFixed(3);
+            canvas.style.transform = `translateY(${currentTranslateY.toFixed(2)}vh)`;
+        }, { passive: true });
+    </script>
+</body>
+</html>
