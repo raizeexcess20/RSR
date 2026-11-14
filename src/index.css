@@ -85,6 +85,15 @@ html.mobile-hud-lg .hud-scale-soundcloud-inner {
   transform-origin: top center;
 }
 
+.bounce-line-wrap {
+  max-width: 48rem;
+}
+@media (min-width: 640px) {
+  html:not(.mobile-hud-lg) .bounce-line-wrap {
+    max-width: 68rem;
+  }
+}
+
 /* Glassmorphism Panel - Sleek Minimalist Aesthetic */
 .glass-panel {
   background: rgba(15, 15, 18, 0.65);

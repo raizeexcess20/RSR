@@ -1004,6 +1004,9 @@ export default function App() {
     return 0.5 + ((s - 1.0) / 9.0) * 0.5;
   };
 
+  const timeStepHoldTimeoutRef = useRef<number | null>(null);
+  const timeStepHoldIntervalRef = useRef<number | null>(null);
+
   // Step micro-control: -0.01 or +0.01
   const stepTimeScale = useCallback((delta: number) => {
     const current = timeScaleRef.current;
@@ -1014,11 +1017,44 @@ export default function App() {
     setTimePos(newPos);
   }, []);
 
+  const stopTimeStepHold = useCallback(() => {
+    if (timeStepHoldTimeoutRef.current !== null) {
+      window.clearTimeout(timeStepHoldTimeoutRef.current);
+      timeStepHoldTimeoutRef.current = null;
+    }
+    if (timeStepHoldIntervalRef.current !== null) {
+      window.clearInterval(timeStepHoldIntervalRef.current);
+      timeStepHoldIntervalRef.current = null;
+    }
+  }, []);
+
+  const startTimeStepHold = useCallback(
+    (delta: number) => {
+      stopTimeStepHold();
+      stepTimeScale(delta);
+      timeStepHoldTimeoutRef.current = window.setTimeout(() => {
+        timeStepHoldIntervalRef.current = window.setInterval(() => {
+          stepTimeScale(delta);
+        }, 42);
+      }, 220);
+    },
+    [stepTimeScale, stopTimeStepHold]
+  );
+
+  useEffect(() => {
+    window.addEventListener('blur', stopTimeStepHold);
+    return () => {
+      window.removeEventListener('blur', stopTimeStepHold);
+      stopTimeStepHold();
+    };
+  }, [stopTimeStepHold]);
+
   // Time Control: Drag handlers (Center line = 1.00x normal speed, 0.01x to 10.0x)
   const updateTimeFromClientX = useCallback((clientX: number) => {
     if (!timeTrackRef.current) return;
     const rect = timeTrackRef.current.getBoundingClientRect();
-    const rawRatio = (clientX - rect.left) / (rect.width || 1);
+    const usableWidth = Math.max(1, rect.width - 16);
+    const rawRatio = (clientX - (rect.left + 8)) / usableWidth;
     let clamped = Math.max(0, Math.min(1, rawRatio));
 
     // Magnetic snap to center (1.00x default speed)
@@ -2205,15 +2241,8 @@ export default function App() {
         strokeDistance = 0;
         recentSwipeVx = 0;
         recentSwipeVy = 0;
-
-        pointerX = e.clientX;
-        pointerY = e.clientY;
-        const halfW = width / 2;
-        const halfH = height / 2;
-        const normalizedX = (e.clientX - halfW) / (halfW || 1);
-        const normalizedY = (e.clientY - halfH) / (halfH || 1);
-        targetOffsetX = Math.max(-25, Math.min(25, normalizedX * 25));
-        targetOffsetY = Math.max(-18, Math.min(18, normalizedY * 18));
+        targetOffsetX = 0;
+        targetOffsetY = 0;
         return;
       }
 
@@ -2290,6 +2319,8 @@ export default function App() {
       if (e.pointerType !== 'touch' || activePointerIds.size === 0) {
         isPointerDown = false;
         hasPrevPointer = false;
+        targetOffsetX = 0;
+        targetOffsetY = 0;
       }
       releaseHeldItems();
     };
@@ -2302,6 +2333,9 @@ export default function App() {
         return;
       }
       isPointerDown = false;
+      hasPrevPointer = false;
+      targetOffsetX = 0;
+      targetOffsetY = 0;
       if ((heldBody && heldBody.isHeld) || (heldSpaceship && heldSpaceship.isHeld)) {
         releaseHeldItems();
       } else {
@@ -4922,15 +4956,27 @@ export default function App() {
         </div>
 
         {/* Controller Row: Micro-Control [<] | Track with Dropped Middle Line & Knob | Micro-Control [>] */}
-        <div className="flex items-center gap-1.5 sm:gap-1.5">
+        <div className="flex items-center gap-2 sm:gap-1.5">
           {/* Micro-Control Slower "<" (-0.01x) */}
           <button
-            onClick={(e) => {
+            type="button"
+            onPointerDown={(e) => {
+              if (e.pointerType === 'mouse' && e.button !== 0) return;
               e.stopPropagation();
-              stepTimeScale(-0.01);
+              startTimeStepHold(-0.01);
             }}
+            onPointerUp={stopTimeStepHold}
+            onPointerCancel={stopTimeStepHold}
+            onPointerLeave={stopTimeStepHold}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                stepTimeScale(-0.01);
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
             className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-black/80 hover:bg-zinc-800 border border-white/15 hover:border-cyan-400/50 text-cyan-400 hover:text-cyan-300 flex items-center justify-center text-[10px] sm:text-xs font-bold font-mono transition-all active:scale-90 cursor-pointer shadow-sm shrink-0"
-            title="Slow down time by 0.01×"
+            title="Slow down time by 0.01× (hold to repeat)"
             aria-label="Decrease time speed by 0.01x"
           >
             &lt;
@@ -4947,7 +4993,7 @@ export default function App() {
             onPointerMove={handleTimePointerMove}
             onPointerUp={handleTimePointerUp}
             onPointerCancel={handleTimePointerUp}
-            className="relative w-36 sm:w-[184px] h-8 flex flex-col items-center justify-center cursor-pointer group px-2"
+            className="relative w-36 sm:w-[184px] h-8 flex flex-col items-center justify-center cursor-pointer group"
             title={`Temporal Speed: ${timeScale.toFixed(2)}× (Center mark = 1.00×)`}
             aria-label="Cosmic Time Warp Slider"
           >
@@ -4969,9 +5015,9 @@ export default function App() {
               title="1.00× Normal Time"
             />
 
-            {/* Majestic Sleek Dot Thumb dropped down with the track line */}
+            {/* Majestic Sleek Dot Thumb aligned strictly within the bar ends */}
             <div
-              style={{ left: `${timePos * 100}%` }}
+              style={{ left: `calc(${timePos * 100}% + ${(0.5 - timePos) * 16}px)` }}
               className="absolute top-1/2 translate-y-[-1px] -translate-x-1/2 cursor-grab active:cursor-grabbing hover:scale-125 active:scale-95 transition-transform z-20 pointer-events-none"
             >
               <div className="relative w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-cyan-300 border border-white shadow-[0_0_8px_#00f2fe,0_0_14px_rgba(0,242,254,0.8)] flex items-center justify-center">
@@ -4982,12 +5028,24 @@ export default function App() {
 
           {/* Micro-Control Faster ">" (+0.01x) */}
           <button
-            onClick={(e) => {
+            type="button"
+            onPointerDown={(e) => {
+              if (e.pointerType === 'mouse' && e.button !== 0) return;
               e.stopPropagation();
-              stepTimeScale(0.01);
+              startTimeStepHold(0.01);
             }}
+            onPointerUp={stopTimeStepHold}
+            onPointerCancel={stopTimeStepHold}
+            onPointerLeave={stopTimeStepHold}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                stepTimeScale(0.01);
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
             className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-black/80 hover:bg-zinc-800 border border-white/15 hover:border-cyan-400/50 text-cyan-400 hover:text-cyan-300 flex items-center justify-center text-[10px] sm:text-xs font-bold font-mono transition-all active:scale-90 cursor-pointer shadow-sm shrink-0"
-            title="Speed up time by 0.01×"
+            title="Speed up time by 0.01× (hold to repeat)"
             aria-label="Increase time speed by 0.01x"
           >
             &gt;
@@ -5050,7 +5108,7 @@ export default function App() {
                   </div>
                   <div className="flex items-start gap-2 sm:gap-2.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
-                    <span><strong className="text-white">0.2s Hold to Stasis & Fling:</strong> Hold any celestial body for 0.2 seconds to freeze its orbital motion. It remains anchored while pressed and only flings depending on release swipe velocity.</span>
+                    <span><strong className="text-white">0.2s Hold to Stasis & Fling:</strong> Hold any celestial body for 0.2 seconds to freeze its orbital motion. It is anchored while pressed and only flings depending on release swipe velocity.</span>
                   </div>
                   <div className="flex items-start gap-2 sm:gap-2.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
@@ -5301,7 +5359,7 @@ export default function App() {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Thin Futuristic Blue Bounce Line Separating Nebula From SoundCloud Section */}
-        <div ref={bounceLineRef} className="w-full max-w-3xl px-4 pointer-events-none">
+        <div ref={bounceLineRef} className="w-full bounce-line-wrap px-4 pointer-events-none">
           <div className="w-full h-[1.5px] bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent shadow-[0_0_12px_rgba(0,242,254,0.6)]" />
         </div>
 
