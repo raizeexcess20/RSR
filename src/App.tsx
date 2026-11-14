@@ -779,7 +779,6 @@ export default function App() {
   const isStartingAudioRef = useRef(false);
 
   const tryFallbackAudio = useCallback(() => {
-    if (!isSoundCloudOpenRef.current) return;
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -814,7 +813,6 @@ export default function App() {
   }, []);
 
   const startAudio = useCallback(async () => {
-    if (!isSoundCloudOpenRef.current) return;
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -842,11 +840,6 @@ export default function App() {
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         await playPromise;
-        if (!isSoundCloudOpenRef.current) {
-          audio.pause();
-          setIsPlaying(false);
-          return;
-        }
         failedSourcesCountRef.current = 0;
         setIsPlaying(true);
         userExplicitlyPausedRef.current = false;
@@ -887,8 +880,6 @@ export default function App() {
     // Check physical audio element status directly to prevent inverted state desync
     if (!audio.paused && !audio.ended) {
       pauseAudio();
-    } else if (!isSoundCloudOpenRef.current) {
-      setStatusMessage('Audio source hidden — press Show below');
     } else {
       userExplicitlyPausedRef.current = false;
       startAudio();
@@ -901,15 +892,9 @@ export default function App() {
     setIsSoundCloudOpen((prev) => {
       const next = !prev;
       isSoundCloudOpenRef.current = next;
-      if (!next) {
+      if (next && !userExplicitlyPausedRef.current) {
         const audio = audioRef.current;
-        if (audio && !audio.paused) {
-          audio.pause();
-        }
-        setIsPlaying(false);
-      } else {
-        setStatusMessage(null);
-        if (!userExplicitlyPausedRef.current) {
+        if (audio && (audio.paused || audio.ended)) {
           startAudio();
         }
       }
@@ -1106,7 +1091,7 @@ export default function App() {
       if (targetEl && targetEl.closest && targetEl.closest('#play-pause-btn')) {
         return;
       }
-      if (userExplicitlyPausedRef.current || !isSoundCloudOpenRef.current) return;
+      if (userExplicitlyPausedRef.current) return;
 
       const currentAudio = audioRef.current;
       if (currentAudio && (currentAudio.paused || currentAudio.ended)) {
@@ -2208,6 +2193,30 @@ export default function App() {
         hasPrevPointer = false;
         return;
       }
+
+      // On desktop, swiping and dragging only happen while the primary mouse button is actively held down
+      const isPrimaryButtonHeld = (e.buttons & 1) !== 0;
+      if (!isPointerDown || !isPrimaryButtonHeld) {
+        if (!isPrimaryButtonHeld && isPointerDown) {
+          isPointerDown = false;
+          releaseHeldItems();
+        }
+        hasPrevPointer = false;
+        strokeDistance = 0;
+        recentSwipeVx = 0;
+        recentSwipeVy = 0;
+
+        pointerX = e.clientX;
+        pointerY = e.clientY;
+        const halfW = width / 2;
+        const halfH = height / 2;
+        const normalizedX = (e.clientX - halfW) / (halfW || 1);
+        const normalizedY = (e.clientY - halfH) / (halfH || 1);
+        targetOffsetX = Math.max(-25, Math.min(25, normalizedX * 25));
+        targetOffsetY = Math.max(-18, Math.min(18, normalizedY * 18));
+        return;
+      }
+
       processSwipeMove(e.clientX, e.clientY);
     };
 
@@ -2280,6 +2289,7 @@ export default function App() {
       activePointerIds.delete(e.pointerId);
       if (e.pointerType !== 'touch' || activePointerIds.size === 0) {
         isPointerDown = false;
+        hasPrevPointer = false;
       }
       releaseHeldItems();
     };
@@ -4871,7 +4881,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-[380vh] bg-black selection:bg-cyan-400 selection:text-black">
+    <div className="relative min-h-[380vh] bg-black select-none selection:bg-cyan-400 selection:text-black">
       {/* Interactive Cyan Vortex Background Canvas (Fixed to viewport) */}
       <canvas id="vortex-canvas" ref={canvasRef} />
 
@@ -4912,7 +4922,7 @@ export default function App() {
         </div>
 
         {/* Controller Row: Micro-Control [<] | Track with Dropped Middle Line & Knob | Micro-Control [>] */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-1.5">
           {/* Micro-Control Slower "<" (-0.01x) */}
           <button
             onClick={(e) => {
@@ -4937,7 +4947,7 @@ export default function App() {
             onPointerMove={handleTimePointerMove}
             onPointerUp={handleTimePointerUp}
             onPointerCancel={handleTimePointerUp}
-            className="relative w-36 sm:w-56 h-8 flex flex-col items-center justify-center cursor-pointer group px-2"
+            className="relative w-36 sm:w-[184px] h-8 flex flex-col items-center justify-center cursor-pointer group px-2"
             title={`Temporal Speed: ${timeScale.toFixed(2)}× (Center mark = 1.00×)`}
             aria-label="Cosmic Time Warp Slider"
           >
@@ -4991,11 +5001,15 @@ export default function App() {
         <div
           data-ui-control="true"
           className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in"
-          onClick={() => setIsGuideOpen(false)}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsGuideOpen(false);
+            }
+          }}
         >
           <div
             data-ui-control="true"
-            className="w-full max-w-md sm:max-w-2xl bg-[#09090b]/95 border border-white/15 rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col gap-5 sm:gap-6 text-left text-zinc-200 relative overflow-hidden max-h-[85vh] overflow-y-auto hud-scale-guide-modal"
+            className="w-full max-w-md sm:max-w-[600px] bg-[#09090b]/95 border border-white/15 rounded-2xl p-6 sm:px-7 sm:py-7 shadow-2xl flex flex-col gap-5 sm:gap-6 text-left text-zinc-200 relative overflow-hidden max-h-[85vh] overflow-y-auto select-text hud-scale-guide-modal"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -5300,8 +5314,8 @@ export default function App() {
               ? 'px-2.5 py-0.5 rounded-md bg-black/75 backdrop-blur-md hover:bg-zinc-900/90 border border-white/12 hover:border-cyan-400/50 text-zinc-300 hover:text-cyan-300 transition-all flex items-center gap-1.5 cursor-pointer text-[10px] font-mono group shadow-md'
               : '-mt-[1px] px-2.5 py-0.5 rounded-b-md bg-black/80 hover:bg-zinc-900/90 border border-t-0 border-cyan-400/40 hover:border-cyan-400/75 text-cyan-400 hover:text-cyan-300 transition-all flex items-center justify-center cursor-pointer group shadow-md'
           }
-          title={isSoundCloudOpen ? 'Hide SoundCloud source & stop audio' : 'Reopen SoundCloud source & resume audio'}
-          aria-label={isSoundCloudOpen ? 'Hide SoundCloud source & stop audio' : 'Reopen SoundCloud source & resume audio'}
+          title={isSoundCloudOpen ? 'Hide SoundCloud section' : 'Reopen SoundCloud section'}
+          aria-label={isSoundCloudOpen ? 'Hide SoundCloud section' : 'Reopen SoundCloud section'}
         >
           <span className="text-[11px] leading-none text-cyan-400 group-hover:scale-115 transition-transform">
             ⧪
@@ -5350,16 +5364,16 @@ export default function App() {
               href="https://soundcloud.com/haris-adnan/metal-gear-rising-revengeance"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[11px] font-mono text-cyan-400/90 hover:text-cyan-300 transition-colors flex items-center justify-center gap-1.5 group cursor-pointer px-3 text-center"
+              className="text-[9.5px] sm:text-[10px] font-mono text-cyan-400/90 hover:text-cyan-300 transition-colors flex items-center justify-center gap-1.5 group cursor-pointer px-3 text-center select-none"
             >
-              <i className="fa-brands fa-soundcloud text-cyan-400/80 text-xs shrink-0 group-hover:scale-110 transition-transform" />
+              <i className="fa-brands fa-soundcloud text-cyan-400/80 text-[10.5px] sm:text-[11px] shrink-0 group-hover:scale-110 transition-transform" />
               <span className="underline decoration-cyan-500/35 hover:decoration-cyan-400 break-all">
                 https://soundcloud.com/haris-adnan/metal-gear-rising-revengeance
               </span>
             </a>
 
             {/* Alien Subtext below SoundCloud embed & link */}
-            <div className="text-[11px] font-mono tracking-widest text-zinc-300 select-all py-1.5 px-3 rounded-xl bg-black/70 border border-white/10 break-all shadow-inner mx-3 text-center">
+            <div className="text-[11px] font-mono tracking-widest text-zinc-300 select-all cursor-text py-1.5 px-3 rounded-xl bg-black/70 border border-white/10 break-all shadow-inner mx-3 text-center">
               !¡ꖎᒷᔑᓭᒷ リ𝙹 ᓵ𝙹!¡ǁ∷╎⊣⍑ℸ!
             </div>
           </div>
@@ -5509,7 +5523,7 @@ export default function App() {
             {/* Row 1: Time Display */}
             <div className="flex items-center justify-between text-[9px] font-mono text-zinc-400 px-0.5 leading-none">
               <span className="text-zinc-200">{formatTime(trackCurrentTime)}</span>
-              <span className="text-[8px] tracking-wider text-zinc-500 font-sans">bIpIvchu&apos;jaj</span>
+              <span className="text-[8px] tracking-wider text-zinc-500 font-sans select-text cursor-text">bIpIvchu&apos;jaj</span>
               <span className="text-zinc-200">{formatTime(trackDuration)}</span>
             </div>
 

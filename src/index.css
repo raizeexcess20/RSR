@@ -7,8 +7,20 @@ html, body {
   touch-action: manipulation;
   overscroll-behavior-y: contain;
   -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+}
+
+.select-text {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.select-all {
+  -webkit-user-select: all;
+  user-select: all;
 }
 
 .overflow-y-auto {
