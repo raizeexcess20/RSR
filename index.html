@@ -10,10 +10,11 @@
             var w = window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || 0;
             var sw = (window.screen && window.screen.width) || 0;
             var sh = (window.screen && window.screen.height) || 0;
-            var isNarrowPortrait = (w > 0 && w !== 980) ? w < 445 : (sw > 0 && sw < 445 && (!sh || sw <= sh));
+            var isNarrowPortrait = (w > 0 && w !== 980) ? w < 520 : (sw > 0 && sw < 520 && (!sh || sw <= sh));
             if (isNarrowPortrait) {
               var vp = document.getElementById('vp-meta');
-              if (vp) vp.setAttribute('content', 'width=445');
+              if (vp) vp.setAttribute('content', 'width=1120');
+              document.documentElement.classList.add('mobile-hud-lg');
             }
           }
         } catch (e) {}

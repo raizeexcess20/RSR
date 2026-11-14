@@ -5,11 +5,10 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 
-// Primary high-reliability local asset with seamless remote mirrors:
-const PRIMARY_AUDIO_SRC = './audio/bg-music.mp3';
+// High-reliability MP3 mirrors (local ./audio/bg-music.mp3 is not bundled):
 const REMOTE_AUDIO_SRC = 'https://videotourl.com/audio/1794227419367-d268eb0f-7b84-469e-ac23-91689fc1afc7.mp3';
 const LEGACY_AUDIO_SRC = 'https://mp3tourl.com/audio/1794093400733-af13578f-6773-43fe-8165-a372cf5d54a8.mp3';
-const AUDIO_SOURCES = [PRIMARY_AUDIO_SRC, REMOTE_AUDIO_SRC, LEGACY_AUDIO_SRC];
+const AUDIO_SOURCES = [REMOTE_AUDIO_SRC, LEGACY_AUDIO_SRC];
 
 const DISCORD_INVITE_API = 'https://discord.com/api/v9/invites/JvsWrsCDyK?with_counts=true';
 
@@ -648,11 +647,9 @@ const playCelestialTierSound = (
   } catch {}
 };
 
-// Music Audio Beat Analyzer: Web Audio Analyser with tempo tracker fallback
-let mediaElementSource: MediaElementAudioSourceNode | null = null;
-let musicAnalyser: AnalyserNode | null = null;
-let musicFreqData: Uint8Array<ArrayBuffer> | null = null;
-
+// Music Audio Beat Analyzer: Tempo tracker synced to playback time
+// Note: Avoid createMediaElementSource() on cross-origin MP3 streams without CORS headers,
+// because Web Audio mutes cross-origin media elements to complete silence.
 const getMusicBeatEnergy = (
   audio: HTMLAudioElement | null,
   isAudioPlaying: boolean,
@@ -661,34 +658,6 @@ const getMusicBeatEnergy = (
   if (!audio || !isAudioPlaying || audio.paused || musicVol <= 0.001) {
     return 0;
   }
-
-  // 1. Attempt to use Web Audio Analyser if connected
-  try {
-    const ctx = getSharedAudioContext();
-    if (ctx && !mediaElementSource && audio.src) {
-      try {
-        mediaElementSource = ctx.createMediaElementSource(audio);
-        musicAnalyser = ctx.createAnalyser();
-        musicAnalyser.fftSize = 64;
-        musicAnalyser.smoothingTimeConstant = 0.65;
-        mediaElementSource.connect(musicAnalyser);
-        musicAnalyser.connect(ctx.destination);
-        musicFreqData = new Uint8Array(new ArrayBuffer(musicAnalyser.frequencyBinCount));
-      } catch {
-        // Fallback gracefully if browser or CORS prevents media element source
-      }
-    }
-
-    if (musicAnalyser && musicFreqData) {
-      musicAnalyser.getByteFrequencyData(musicFreqData);
-      // Low bass / sub-kick frequencies are in bins 0..3
-      const bassEnergy = (musicFreqData[0] + musicFreqData[1] + musicFreqData[2] + musicFreqData[3]) / 4 / 255;
-      if (bassEnergy > 0.03) {
-        // Real frequency spectrum active: detect kicks
-        return bassEnergy > 0.52 ? Math.min(1.0, (bassEnergy - 0.4) * 2.2) : bassEnergy * 0.22;
-      }
-    }
-  } catch {}
 
   // 2. Resilient Procedural Tempo Beat Detector based on track playback time
   // For electronic/ambient EDM tracks (~128 BPM = ~0.46875s per beat, 4/4 signature)
@@ -806,11 +775,20 @@ export default function App() {
   }, []);
 
   const currentSourceIndexRef = useRef(0);
+  const failedSourcesCountRef = useRef(0);
+  const isStartingAudioRef = useRef(false);
 
   const tryFallbackAudio = useCallback(() => {
     if (!isSoundCloudOpenRef.current) return;
     const audio = audioRef.current;
     if (!audio) return;
+
+    failedSourcesCountRef.current += 1;
+    if (failedSourcesCountRef.current >= AUDIO_SOURCES.length) {
+      setIsPlaying(false);
+      setStatusMessage('Audio stream failed — tap Play to retry');
+      return;
+    }
 
     currentSourceIndexRef.current = (currentSourceIndexRef.current + 1) % AUDIO_SOURCES.length;
     const nextSrc = AUDIO_SOURCES[currentSourceIndexRef.current];
@@ -821,12 +799,16 @@ export default function App() {
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
+          failedSourcesCountRef.current = 0;
           setIsPlaying(true);
           hasEverPlayedRef.current = true;
           setStatusMessage(null);
         })
-        .catch(() => {
-          // Keep fallback quiet if browser autoplay blocks
+        .catch((err: unknown) => {
+          const domErr = err as DOMException;
+          if (domErr && domErr.name === 'NotAllowedError' && !hasEverPlayedRef.current) {
+            setStatusMessage('Click anywhere to enable audio');
+          }
         });
     }
   }, []);
@@ -836,12 +818,22 @@ export default function App() {
     const audio = audioRef.current;
     if (!audio) return;
 
+    if (!audio.paused && !audio.ended) {
+      setIsPlaying(true);
+      setStatusMessage(null);
+      return;
+    }
+    if (isStartingAudioRef.current) return;
+    isStartingAudioRef.current = true;
+
     // Ensure Web Audio context is primed
     getSharedAudioContext();
     audio.volume = musicVolumeRef.current;
+    audio.muted = musicVolumeRef.current === 0;
 
     // If audio element is errored or uninitialized, reload with current source
     if (audio.error || !audio.src || audio.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
+      failedSourcesCountRef.current = 0;
       audio.src = AUDIO_SOURCES[currentSourceIndexRef.current];
       audio.load();
     }
@@ -855,6 +847,7 @@ export default function App() {
           setIsPlaying(false);
           return;
         }
+        failedSourcesCountRef.current = 0;
         setIsPlaying(true);
         userExplicitlyPausedRef.current = false;
         hasEverPlayedRef.current = true;
@@ -871,6 +864,8 @@ export default function App() {
       } else {
         tryFallbackAudio();
       }
+    } finally {
+      isStartingAudioRef.current = false;
     }
   }, [tryFallbackAudio]);
 
@@ -1105,8 +1100,12 @@ export default function App() {
     startAudio();
 
     // Universal gesture handler to unlock and initiate audio on first tap/click anywhere
-    const handleUserGesture = () => {
+    const handleUserGesture = (e: Event) => {
       getSharedAudioContext();
+      const targetEl = e.target as HTMLElement | null;
+      if (targetEl && targetEl.closest && targetEl.closest('#play-pause-btn')) {
+        return;
+      }
       if (userExplicitlyPausedRef.current || !isSoundCloudOpenRef.current) return;
 
       const currentAudio = audioRef.current;
@@ -1115,7 +1114,7 @@ export default function App() {
       }
     };
 
-    const interactionEvents: (keyof WindowEventMap)[] = ['click', 'touchstart', 'pointerdown', 'keydown'];
+    const interactionEvents: (keyof WindowEventMap)[] = ['click', 'touchend', 'keydown'];
     interactionEvents.forEach((evt) => {
       window.addEventListener(evt, handleUserGesture, { passive: true });
     });
@@ -1138,9 +1137,10 @@ export default function App() {
       }
       const lineRect = lineEl.getBoundingClientRect();
       const isCompact = window.innerWidth < 640;
+      const isScaledMobile = document.documentElement.classList.contains('mobile-hud-lg');
       const nebulaCrestTop = lineRect.top - 52;
       const desired = Math.max(24, Math.ceil(window.innerHeight - nebulaCrestTop + (isCompact ? 8 : 6)));
-      const maxSafe = Math.max(24, window.innerHeight - 175);
+      const maxSafe = Math.max(24, window.innerHeight - (isScaledMobile ? 380 : 175));
       setMusicBarBottom(Math.min(desired, maxSafe));
       setShowBottomCue(lineRect.top <= window.innerHeight + 30);
     };
@@ -4063,18 +4063,40 @@ export default function App() {
           ctx.fillStyle = 'rgba(124, 45, 18, 0.35)';
           ctx.fillRect(x - p.size, y + p.size * 0.12, p.size * 2, p.size * 0.16);
 
-          // Great Red Spot: Oval swirling storm in south tropical zone!
-          const grsX = x + p.size * 0.28;
-          const grsY = y + p.size * 0.28;
-          ctx.beginPath();
-          ctx.ellipse(grsX, grsY, p.size * 0.34, p.size * 0.22, 0.08, 0, Math.PI * 2);
-          ctx.fillStyle = '#dc2626';
-          ctx.fill();
+          // Slightly off-center Red Hexagonal Mark: Smaller, crisp, rigid geometric storm mark
+          const hexX = x + p.size * 0.19;
+          const hexY = y + p.size * 0.16;
+          const hexOuterR = p.size * 0.27;
+          const hexInnerR = p.size * 0.12;
+          const hexAngleOffset = 0;
 
-          // Great Red Spot eye core highlight
+          ctx.lineJoin = 'miter';
           ctx.beginPath();
-          ctx.ellipse(grsX, grsY, p.size * 0.18, p.size * 0.1, 0.08, 0, Math.PI * 2);
-          ctx.fillStyle = '#f87171';
+          for (let h = 0; h < 6; h++) {
+            const ang = hexAngleOffset + (Math.PI / 3) * h;
+            const hx = hexX + Math.cos(ang) * hexOuterR;
+            const hy = hexY + Math.sin(ang) * hexOuterR * 0.86;
+            if (h === 0) ctx.moveTo(hx, hy);
+            else ctx.lineTo(hx, hy);
+          }
+          ctx.closePath();
+          ctx.fillStyle = '#b91c1c';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(127, 29, 29, 0.95)';
+          ctx.lineWidth = 0.9;
+          ctx.stroke();
+
+          // Subtle rigid inner hexagonal core
+          ctx.beginPath();
+          for (let h = 0; h < 6; h++) {
+            const ang = hexAngleOffset + (Math.PI / 3) * h;
+            const hx = hexX + Math.cos(ang) * hexInnerR;
+            const hy = hexY + Math.sin(ang) * hexInnerR * 0.86;
+            if (h === 0) ctx.moveTo(hx, hy);
+            else ctx.lineTo(hx, hy);
+          }
+          ctx.closePath();
+          ctx.fillStyle = '#dc2626';
           ctx.fill();
 
           ctx.restore();
@@ -4779,9 +4801,9 @@ export default function App() {
   };
 
   const getSfxVolumeIconClass = () => {
-    if (sfxVolume === 0) return 'fa-solid fa-volume-xmark text-[9px] text-zinc-500';
-    if (sfxVolume < 0.5) return 'fa-solid fa-volume-low text-[9px] text-white';
-    return 'fa-solid fa-volume-high text-[9px] text-white';
+    if (sfxVolume === 0) return 'fa-solid fa-volume-xmark text-[9px] sm:text-[11px] text-zinc-500';
+    if (sfxVolume < 0.5) return 'fa-solid fa-volume-low text-[9px] sm:text-[11px] text-white';
+    return 'fa-solid fa-volume-high text-[9px] sm:text-[11px] text-white';
   };
 
   // Dual Volume Track Drag Handler
@@ -4854,22 +4876,22 @@ export default function App() {
       <canvas id="vortex-canvas" ref={canvasRef} />
 
       {/* FIXED TOP-LEFT SLEEK GAMING / MECHANICS GUIDE BUTTON */}
-      <div data-ui-control="true" className="fixed top-4 left-4 min-[430px]:top-5 min-[430px]:left-5 sm:top-6 sm:left-6 z-50 flex items-center gap-2.5">
+      <div data-ui-control="true" className="fixed top-4 left-4 min-[430px]:top-5 min-[430px]:left-5 sm:top-6 sm:left-6 z-50 flex items-center gap-2.5 hud-scale-top-left">
         <button
           onClick={() => {
             setIsGuideOpen(true);
             setHasOpenedGuide(true);
             requestGyroscopePermission();
           }}
-          className="glass-panel glass-panel-hover group px-3 h-10 rounded-xl flex items-center gap-2 text-zinc-300 hover:text-white transition-all duration-300 active:scale-95 shadow-lg border border-white/10 hover:border-white/25 cursor-pointer"
+          className="glass-panel glass-panel-hover group px-3 h-10 sm:px-4 sm:h-12 rounded-xl sm:rounded-2xl flex items-center gap-2 sm:gap-2.5 text-zinc-300 hover:text-white transition-all duration-300 active:scale-95 shadow-lg border border-white/10 hover:border-white/25 cursor-pointer"
           title="Interactive Vortex Mechanics Guide & Mobile Sensor Controls"
           aria-label="Open Interactive Vortex Controls Guide"
         >
           {/* Gaming Icon on left */}
-          <i className="fa-solid fa-gamepad text-cyan-400 group-hover:text-cyan-300 text-sm transition-transform duration-300 group-hover:scale-110" />
+          <i className="fa-solid fa-gamepad text-cyan-400 group-hover:text-cyan-300 text-sm sm:text-lg transition-transform duration-300 group-hover:scale-110" />
           {/* Blue Dot near Controller icon: pulses only on initial load/reload until Mechanics menu is opened once */}
           <span
-            className={`w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f2fe] ${
+            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f2fe] ${
               !hasOpenedGuide ? 'animate-pulse' : ''
             }`}
             title={hasOpenedGuide ? 'Mechanics Guide' : 'Interactive Mechanics Guide'}
@@ -4880,23 +4902,24 @@ export default function App() {
       {/* FIXED TOP-CENTER MAJESTIC SLIM TIME CONTROL */}
       <div
         data-ui-control="true"
-        className="fixed top-[62px] min-[430px]:top-8 sm:top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center select-none touch-none pointer-events-auto"
+        className="fixed top-[62px] min-[430px]:top-8 sm:top-4 left-1/2 -translate-x-1/2 z-50 select-none touch-none pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="flex flex-col items-center hud-scale-top-center">
         {/* Sleek Numeric Speed Display Placed Centered Above Time Controller */}
-        <div className="text-[10.5px] font-mono tracking-wider font-semibold text-cyan-300 pointer-events-none drop-shadow-[0_0_8px_rgba(0,242,254,0.7)] leading-none mb-1 text-center">
+        <div className="text-[10.5px] sm:text-xs font-mono tracking-wider font-semibold text-cyan-300 pointer-events-none drop-shadow-[0_0_8px_rgba(0,242,254,0.7)] leading-none mb-1 sm:mb-1.5 text-center">
           {timeScale.toFixed(2)}×
         </div>
 
         {/* Controller Row: Micro-Control [<] | Track with Dropped Middle Line & Knob | Micro-Control [>] */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
           {/* Micro-Control Slower "<" (-0.01x) */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               stepTimeScale(-0.01);
             }}
-            className="w-5 h-5 rounded-md bg-black/80 hover:bg-zinc-800 border border-white/15 hover:border-cyan-400/50 text-cyan-400 hover:text-cyan-300 flex items-center justify-center text-[10px] font-bold font-mono transition-all active:scale-90 cursor-pointer shadow-sm shrink-0"
+            className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-black/80 hover:bg-zinc-800 border border-white/15 hover:border-cyan-400/50 text-cyan-400 hover:text-cyan-300 flex items-center justify-center text-[10px] sm:text-xs font-bold font-mono transition-all active:scale-90 cursor-pointer shadow-sm shrink-0"
             title="Slow down time by 0.01×"
             aria-label="Decrease time speed by 0.01x"
           >
@@ -4914,7 +4937,7 @@ export default function App() {
             onPointerMove={handleTimePointerMove}
             onPointerUp={handleTimePointerUp}
             onPointerCancel={handleTimePointerUp}
-            className="relative w-36 sm:w-48 h-8 flex flex-col items-center justify-center cursor-pointer group px-2"
+            className="relative w-36 sm:w-56 h-8 flex flex-col items-center justify-center cursor-pointer group px-2"
             title={`Temporal Speed: ${timeScale.toFixed(2)}× (Center mark = 1.00×)`}
             aria-label="Cosmic Time Warp Slider"
           >
@@ -4941,7 +4964,7 @@ export default function App() {
               style={{ left: `${timePos * 100}%` }}
               className="absolute top-1/2 translate-y-[-1px] -translate-x-1/2 cursor-grab active:cursor-grabbing hover:scale-125 active:scale-95 transition-transform z-20 pointer-events-none"
             >
-              <div className="relative w-3.5 h-3.5 rounded-full bg-cyan-300 border border-white shadow-[0_0_8px_#00f2fe,0_0_14px_rgba(0,242,254,0.8)] flex items-center justify-center">
+              <div className="relative w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-cyan-300 border border-white shadow-[0_0_8px_#00f2fe,0_0_14px_rgba(0,242,254,0.8)] flex items-center justify-center">
                 <div className="w-1.5 h-1.5 rounded-full bg-black/90" />
               </div>
             </div>
@@ -4953,12 +4976,13 @@ export default function App() {
               e.stopPropagation();
               stepTimeScale(0.01);
             }}
-            className="w-5 h-5 rounded-md bg-black/80 hover:bg-zinc-800 border border-white/15 hover:border-cyan-400/50 text-cyan-400 hover:text-cyan-300 flex items-center justify-center text-[10px] font-bold font-mono transition-all active:scale-90 cursor-pointer shadow-sm shrink-0"
+            className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-black/80 hover:bg-zinc-800 border border-white/15 hover:border-cyan-400/50 text-cyan-400 hover:text-cyan-300 flex items-center justify-center text-[10px] sm:text-xs font-bold font-mono transition-all active:scale-90 cursor-pointer shadow-sm shrink-0"
             title="Speed up time by 0.01×"
             aria-label="Increase time speed by 0.01x"
           >
             &gt;
           </button>
+        </div>
         </div>
       </div>
 
@@ -4971,117 +4995,117 @@ export default function App() {
         >
           <div
             data-ui-control="true"
-            className="w-full max-w-md bg-[#09090b]/95 border border-white/15 rounded-2xl p-6 shadow-2xl flex flex-col gap-5 text-left text-zinc-200 relative overflow-hidden max-h-[85vh] overflow-y-auto"
+            className="w-full max-w-md sm:max-w-2xl bg-[#09090b]/95 border border-white/15 rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col gap-5 sm:gap-6 text-left text-zinc-200 relative overflow-hidden max-h-[85vh] overflow-y-auto hud-scale-guide-modal"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-black border border-white/15 flex items-center justify-center text-cyan-400">
-                  <i className="fa-solid fa-gamepad text-xs" />
+            <div className="flex items-center justify-between border-b border-white/10 pb-3 sm:pb-4">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-black border border-white/15 flex items-center justify-center text-cyan-400">
+                  <i className="fa-solid fa-gamepad text-xs sm:text-base" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold tracking-wide text-white">Vortex Mechanics Guide</h3>
+                  <h3 className="text-sm sm:text-lg font-semibold tracking-wide text-white">Vortex Mechanics Guide</h3>
                 </div>
               </div>
               <button
                 onClick={() => setIsGuideOpen(false)}
-                className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
                 aria-label="Close mechanics guide"
               >
-                <i className="fa-solid fa-xmark text-sm" />
+                <i className="fa-solid fa-xmark text-sm sm:text-base" />
               </button>
             </div>
 
             {/* Content: Desktop & Mobile Interactions */}
-            <div className="space-y-4 text-xs">
+            <div className="space-y-4 sm:space-y-5 text-xs sm:text-sm">
               {/* Desktop Section */}
-              <div className="space-y-2">
-                <div className="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center gap-1.5">
-                  <i className="fa-solid fa-display text-[10px]" />
+              <div className="space-y-2 sm:space-y-2.5">
+                <div className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center gap-1.5 sm:gap-2">
+                  <i className="fa-solid fa-display text-[10px] sm:text-xs" />
                   <span>Desktop & Spatial Physics</span>
                 </div>
-                <div className="space-y-1.5 text-zinc-300 text-[11px] leading-relaxed pl-1">
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                <div className="space-y-1.5 sm:space-y-2 text-zinc-300 text-[11px] sm:text-[13px] leading-relaxed pl-1">
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">Temporal Controller:</strong> Slide the sleek dot across the header to bend time from 0.01× to 10×. Use the micro-steppers (&lt; / &gt;) for fine 0.01 increments.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">1 Tap = 1 Comet:</strong> Clicking anywhere immediately births a new comet into orbit at your exact coordinate (holding down in empty space streams comets).</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">0.2s Hold to Stasis & Fling:</strong> Hold any celestial body for 0.2 seconds to freeze its orbital motion. It remains anchored while pressed and only flings depending on release swipe velocity.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">The Nebula:</strong> An ancient expanse of luminous stellar dust resting along the lower cosmic horizon, disturbed only when celestial wanderers drift through.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">Hyper-Velocity Comets:</strong> Phantom streaks cutting through the dark from beyond the horizon, defying orbital bounds without 4D intervention.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">Hawking Stars & Accretions:</strong> Singularities feasting within stellar hearts, shrouded in accretion halos. waiting for the void, one sun upon another sun.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">Ctrl + Scroll / Trackpad Pinch:</strong> Dynamically compresses or expands the violent black hole event horizon.</span>
                   </div>
                 </div>
               </div>
 
               {/* Mobile & Gyroscope Section */}
-              <div className="space-y-2 border-t border-white/10 pt-3">
-                <div className="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <i className="fa-solid fa-mobile-screen text-[10px]" />
+              <div className="space-y-2 sm:space-y-2.5 border-t border-white/10 pt-3 sm:pt-4">
+                <div className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 sm:gap-2">
+                    <i className="fa-solid fa-mobile-screen text-[10px] sm:text-xs" />
                     <span>Mobile & Sensor Gestures</span>
                   </span>
                   {hasGyroHardware && (
-                    <span className="text-[9px] text-cyan-300 font-mono bg-cyan-950/70 border border-cyan-800/60 rounded px-1.5 py-0.2">
+                    <span className="text-[9px] sm:text-[10px] text-cyan-300 font-mono bg-cyan-950/70 border border-cyan-800/60 rounded px-1.5 py-0.2">
                       Gyroscope Active
                     </span>
                   )}
                 </div>
-                <div className="space-y-1.5 text-zinc-300 text-[11px] leading-relaxed pl-1">
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                <div className="space-y-1.5 sm:space-y-2 text-zinc-300 text-[11px] sm:text-[13px] leading-relaxed pl-1">
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">Tap Anywhere:</strong> 1 Tap instantly births 1 comet into orbit; hold down in empty space to stream comets.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">0.2s Touch Stasis:</strong> Press and hold on any comet or celestial anomaly for 0.2s to freeze it in place. It will only fling depending on your release swipe velocity.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">Phone Gyroscope Tilt:</strong> Physically tilting your phone dynamically steers the 3D perspective and vortex parallax in real time.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">Two-Finger Pinch:</strong> Pinch inward or outward to scale the central black hole event horizon and tidal shred radius.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 shrink-0" />
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80 mt-1.5 sm:mt-2 shrink-0" />
                     <span><strong className="text-white">Swipe & Intercept:</strong> Fling comets across orbits and deflect incoming hyper-speed comets.</span>
                   </div>
                 </div>
               </div>
 
               {/* Vinyl Disc & Track Navigator Section */}
-              <div className="space-y-2 border-t border-white/10 pt-3">
-                <div className="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center gap-1.5">
-                  <i className="fa-solid fa-compact-disc text-[10px]" />
+              <div className="space-y-2 sm:space-y-2.5 border-t border-white/10 pt-3 sm:pt-4">
+                <div className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center gap-1.5 sm:gap-2">
+                  <i className="fa-solid fa-compact-disc text-[10px] sm:text-xs" />
                   <span>Vinyl Disc &amp; Track Navigator</span>
                 </div>
-                <div className="bg-black/60 border border-white/10 rounded-xl p-2.5 flex items-center gap-3 text-[11px]">
-                  <div className="relative w-8 h-8 rounded-full p-[2px] flex-shrink-0">
+                <div className="bg-black/60 border border-white/10 rounded-xl p-2.5 sm:p-3.5 flex items-center gap-3 sm:gap-4 text-[11px] sm:text-[13px]">
+                  <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full p-[2px] flex-shrink-0">
                     <div className="absolute inset-0 rounded-full border border-dashed border-cyan-400/70 animate-spin-slow pointer-events-none" />
                     <div className="w-full h-full rounded-full bg-zinc-950 border border-white/20 flex items-center justify-center animate-spin-disc">
-                      <div className="w-3.5 h-3.5 rounded-full bg-zinc-900 border border-zinc-600 flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f2fe]" />
+                      <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-zinc-900 border border-zinc-600 flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f2fe]" />
                       </div>
                     </div>
                   </div>
@@ -5092,24 +5116,24 @@ export default function App() {
               </div>
 
               {/* Dual Volume Slider Legend */}
-              <div className="space-y-2 border-t border-white/10 pt-3">
-                <div className="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center gap-1.5">
-                  <i className="fa-solid fa-sliders text-[10px]" />
+              <div className="space-y-2 sm:space-y-2.5 border-t border-white/10 pt-3 sm:pt-4">
+                <div className="text-[11px] sm:text-xs font-mono uppercase tracking-wider text-cyan-400 font-semibold flex items-center gap-1.5 sm:gap-2">
+                  <i className="fa-solid fa-sliders text-[10px] sm:text-xs" />
                   <span>Dual Volume Controller</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
-                  <div className="bg-black/60 border border-white/10 rounded-xl p-2.5 flex items-center gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-white shadow-sm shrink-0" />
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 text-[11px] sm:text-[13px] pt-1">
+                  <div className="bg-black/60 border border-white/10 rounded-xl p-2.5 sm:p-3.5 flex items-center gap-2.5 sm:gap-3">
+                    <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-white shadow-sm shrink-0" />
                     <div>
                       <div className="text-white font-medium">White Dot</div>
-                      <div className="text-[10px] text-zinc-400">Background Music</div>
+                      <div className="text-[10px] sm:text-xs text-zinc-400">Background Music</div>
                     </div>
                   </div>
-                  <div className="bg-black/60 border border-white/10 rounded-xl p-2.5 flex items-center gap-2.5">
-                    <span className="w-3.5 h-3.5 rounded-full bg-black border border-white/80 ring-1 ring-black shrink-0" />
+                  <div className="bg-black/60 border border-white/10 rounded-xl p-2.5 sm:p-3.5 flex items-center gap-2.5 sm:gap-3">
+                    <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-black border border-white/80 ring-1 ring-black shrink-0" />
                     <div>
                       <div className="text-white font-medium">Black Dot</div>
-                      <div className="text-[10px] text-zinc-400">Interactive SFX</div>
+                      <div className="text-[10px] sm:text-xs text-zinc-400">Interactive SFX</div>
                     </div>
                   </div>
                 </div>
@@ -5120,7 +5144,7 @@ export default function App() {
             <div className="pt-2">
               <button
                 onClick={requestGyroscopePermission}
-                className="w-full py-2.5 px-3 rounded-xl bg-black hover:bg-zinc-900 border border-white/20 hover:border-white/40 text-xs font-mono text-cyan-400 hover:text-cyan-300 flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer"
+                className="w-full py-2.5 sm:py-3 px-3 rounded-xl bg-black hover:bg-zinc-900 border border-white/20 hover:border-white/40 text-xs sm:text-sm font-mono text-cyan-400 hover:text-cyan-300 flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer"
               >
                 <i className="fa-solid fa-compass" />
                 <span>Calibrate</span>
@@ -5131,16 +5155,16 @@ export default function App() {
       )}
 
       {/* FIXED TOP-RIGHT SLEEK & MINIMALIST SOCIAL BUTTONS */}
-      <div data-ui-control="true" className="fixed top-4 right-4 min-[430px]:top-5 min-[430px]:right-5 sm:top-6 sm:right-6 z-50 flex items-center gap-2.5 sm:gap-3">
+      <div data-ui-control="true" className="fixed top-4 right-4 min-[430px]:top-5 min-[430px]:right-5 sm:top-6 sm:right-6 z-50 flex items-center gap-2.5 sm:gap-3.5 hud-scale-top-right">
         {/* Discord Icon Button */}
         <a
           href="https://discord.gg/JvsWrsCDyK"
           target="_blank"
           rel="noopener noreferrer"
-          className="glass-panel glass-panel-hover group w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
+          className="glass-panel glass-panel-hover group w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center text-zinc-400 hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
           title="Discord"
         >
-          <svg className="w-4 h-4 fill-current opacity-80 group-hover:opacity-100" viewBox="0 0 127.14 96.36">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5 fill-current opacity-80 group-hover:opacity-100" viewBox="0 0 127.14 96.36">
             <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22c2.63-27.42-4.52-51.11-18.9-72.15ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.87,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5.06-12.74,11.44-12.74S96.23,45.91,96.1,53,91.08,65.69,84.69,65.69Z" />
           </svg>
         </a>
@@ -5150,10 +5174,10 @@ export default function App() {
           href="https://t.me/+lRrfWfKoDmljMDU0"
           target="_blank"
           rel="noopener noreferrer"
-          className="glass-panel glass-panel-hover group w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
+          className="glass-panel glass-panel-hover group w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center text-zinc-400 hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
           title="Telegram"
         >
-          <svg className="w-4 h-4 fill-current opacity-80 group-hover:opacity-100" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5 fill-current opacity-80 group-hover:opacity-100" viewBox="0 0 24 24">
             <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.16l-2.04 9.61c-.15.68-.56.85-1.13.53l-3.13-2.31-1.51 1.45c-.17.17-.31.31-.64.31l.22-3.18 5.79-5.23c.25-.22-.05-.34-.39-.12l-7.16 4.51-3.08-.96c-.67-.21-.68-.67.14-.99l12.04-4.64c.56-.21 1.05.13.89.82z" />
           </svg>
         </a>
@@ -5161,7 +5185,7 @@ export default function App() {
 
       {/* ZONE 0: NEW SMALL EMPTY SPACE 1 SWIPE ABOVE DEFAULT ENTRANCE */}
       <div className="h-[38vh] flex flex-col items-center justify-center select-none pointer-events-none relative z-10">
-        <span className="text-[11px] sm:text-xs font-mono tracking-widest text-zinc-500 font-medium select-none">
+        <span className="text-[11px] sm:text-xs font-mono tracking-widest text-zinc-500 font-medium select-none hud-scale-zone0">
           Yo, Go Down! 
         </span>
       </div>
@@ -5171,7 +5195,7 @@ export default function App() {
 
       {/* ZONE 2: COMMUNITY SECTIONS BELOW FULLEST VORTEX */}
       <section className="min-h-screen flex flex-col items-center justify-center px-4 relative z-20">
-        <div className="flex flex-row items-center justify-center gap-4 md:gap-6 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 hud-scale-cards">
           
           {/* SECTION 1: DISCORD COMMUNITY CARD (SMALL, SLEEK & COMPACT) */}
           <a
@@ -5257,8 +5281,8 @@ export default function App() {
       <div
         ref={soundCloudSectionRef}
         data-ui-control="true"
-        className={`relative z-30 w-full pt-0 flex flex-col items-center ${
-          isSoundCloudOpen ? 'pb-3.5 gap-2 sm:pb-4' : 'pb-1.5 gap-0'
+        className={`relative z-30 w-full pt-0 flex flex-col items-center hud-scale-soundcloud-wrap ${
+          isSoundCloudOpen ? 'pb-3.5 gap-2 sm:pb-4' : 'pb-1.5 gap-0 is-collapsed'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -5267,6 +5291,7 @@ export default function App() {
           <div className="w-full h-[1.5px] bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent shadow-[0_0_12px_rgba(0,242,254,0.6)]" />
         </div>
 
+        <div className={`w-full flex flex-col items-center hud-scale-soundcloud-inner ${isSoundCloudOpen ? 'gap-2' : 'gap-0'}`}>
         {/* Hide button when open; ONLY the custom down arrow symbol flush touching the blue line when hidden */}
         <button
           onClick={toggleSoundCloudSource}
@@ -5339,16 +5364,17 @@ export default function App() {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* FIXED BOTTOM MUSIC PLAYER BAR WITH DUAL VOLUME CONTROLLER (Stays above Nebula & renders Go up a bit text right above itself at page bottom) */}
       <div
-        ref={musicBarColRef}
         data-ui-control="true"
         style={{ bottom: `${musicBarBottom}px` }}
-        className="fixed left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5 max-w-[calc(100vw-20px)]"
+        className="fixed left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-20px)]"
         onClick={(e) => e.stopPropagation()}
       >
+        <div ref={musicBarColRef} className="flex flex-col items-center gap-1.5 hud-scale-bottom-center">
         {/* Bottom Cue Text right above Music Bar (and Track Navigator) when scrolled to bottom */}
         <div
           className={`pointer-events-none select-none text-center transition-opacity duration-200 ${
@@ -5362,13 +5388,13 @@ export default function App() {
 
         <div
           ref={musicBarPillRef}
-          className="glass-panel px-4 py-2.5 rounded-2xl flex items-center gap-3.5 shadow-2xl border border-white/10 max-w-full"
+          className="glass-panel px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl flex items-center gap-3.5 sm:gap-4 shadow-2xl border border-white/10 max-w-full"
         >
           {/* Circular Vinyl Disc: Slow-spinning outer outline + violent pulsating center when playing */}
           <button
             id="vinyl-disc-btn"
             onClick={toggleDiscMenu}
-            className="relative w-8 h-8 rounded-full p-[2px] flex-shrink-0 cursor-pointer group active:scale-95 transition-transform"
+            className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full p-[2px] flex-shrink-0 cursor-pointer group active:scale-95 transition-transform"
             title="Click to toggle track progress & info"
             aria-label="Toggle track progress & audio details"
           >
@@ -5383,10 +5409,10 @@ export default function App() {
               }`}
             >
               {/* Spindle ring */}
-              <div className="w-3.5 h-3.5 rounded-full bg-zinc-900 border border-zinc-600 flex items-center justify-center relative">
+              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-zinc-900 border border-zinc-600 flex items-center justify-center relative">
                 {/* Center Core: Pulsates violently depending on whether the music is playing */}
                 <div
-                  className={`w-1.5 h-1.5 rounded-full ${
+                  className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
                     isPlaying
                       ? 'bg-cyan-400 animate-violent-pulse'
                       : 'bg-cyan-500/50'
@@ -5400,12 +5426,12 @@ export default function App() {
           <button
             id="play-pause-btn"
             onClick={toggleAudio}
-            className="w-8 h-8 rounded-xl glass-panel glass-panel-hover text-zinc-200 hover:text-white flex items-center justify-center transition-all active:scale-90 cursor-pointer shrink-0"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl glass-panel glass-panel-hover text-zinc-200 hover:text-white flex items-center justify-center transition-all active:scale-90 cursor-pointer shrink-0"
             aria-label="Play or Pause audio"
           >
             <i
               id="play-icon"
-              className={isPlaying ? 'fa-solid fa-pause text-[11px]' : 'fa-solid fa-play text-[11px] translate-x-[1px]'}
+              className={isPlaying ? 'fa-solid fa-pause text-[11px] sm:text-sm' : 'fa-solid fa-play text-[11px] sm:text-sm translate-x-[1px]'}
             />
           </button>
 
@@ -5415,10 +5441,10 @@ export default function App() {
                 * Dot A (Interactive SFX): Pure black dot with black border (controls interactive sounds; completely mutes SFX when far left)
                 * Dot B (Music Volume): Completely white dot (controls background music; completely mutes music when far left)
               - Right: completely white "Music" icon */}
-          <div className="flex items-center gap-2.5 border-l border-white/10 pl-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 border-l border-white/10 pl-3 sm:pl-3.5">
             {/* SFX Volume Indicator Badge on Left: Pure Black with slim white border */}
             <div
-              className="w-5 h-5 rounded-full bg-black border border-white/80 flex items-center justify-center shrink-0 shadow-sm"
+              className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-black border border-white/80 flex items-center justify-center shrink-0 shadow-sm"
               title={`Interactive SFX Volume: ${Math.round(sfxVolume * 100)}%`}
             >
               <i className={getSfxVolumeIconClass()} />
@@ -5432,7 +5458,7 @@ export default function App() {
               onPointerMove={handleTrackPointerMove}
               onPointerUp={handleTrackPointerUp}
               onPointerCancel={handleTrackPointerUp}
-              className="relative w-24 h-5 flex items-center cursor-pointer select-none touch-none"
+              className="relative w-24 sm:w-28 h-5 flex items-center cursor-pointer select-none touch-none"
               title="Dual Volume Slider: Black dot = Interactive SFX, White dot = Music"
             >
               {/* Background Groove Track */}
@@ -5448,7 +5474,7 @@ export default function App() {
                     startDragging('sfx', e.pointerId, trackRef.current);
                   }
                 }}
-                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-black border border-black ring-[1px] ring-white/70 shadow-[0_0_4px_rgba(0,0,0,0.9)] cursor-grab active:cursor-grabbing hover:scale-120 transition-transform z-10"
+                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-black border border-black ring-[1px] ring-white/70 shadow-[0_0_4px_rgba(0,0,0,0.9)] cursor-grab active:cursor-grabbing hover:scale-120 transition-transform z-10"
                 title={`Interactive SFX Volume: ${Math.round(sfxVolume * 100)}% (Drag completely left to mute)`}
               />
 
@@ -5462,14 +5488,14 @@ export default function App() {
                     startDragging('music', e.pointerId, trackRef.current);
                   }
                 }}
-                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.85)] border border-white cursor-grab active:cursor-grabbing hover:scale-120 transition-transform z-10"
+                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.85)] border border-white cursor-grab active:cursor-grabbing hover:scale-120 transition-transform z-10"
                 title={`Music Volume: ${Math.round(musicVolume * 100)}% (Drag completely left to mute)`}
               />
             </div>
 
             {/* White Music Icon on Right */}
             <span title={`Music Volume: ${Math.round(musicVolume * 100)}%`} className="shrink-0 flex items-center">
-              <i className="fa-solid fa-music text-white text-[11px]" />
+              <i className="fa-solid fa-music text-white text-[11px] sm:text-sm" />
             </span>
           </div>
         </div>
@@ -5551,6 +5577,7 @@ export default function App() {
           }`}
         >
           {statusMessage}
+        </div>
         </div>
       </div>
 

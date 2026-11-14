@@ -30,6 +30,49 @@ body {
   opacity: 1;
 }
 
+/* Mobile zoomed-out desktop canvas (width=1120) + enlarged interactive HUD controls */
+html.mobile-hud-lg .hud-scale-top-left {
+  transform: scale(2.05);
+  transform-origin: top left;
+}
+html.mobile-hud-lg .hud-scale-top-right {
+  transform: scale(2.05);
+  transform-origin: top right;
+}
+html.mobile-hud-lg .hud-scale-top-center {
+  transform: scale(1.92);
+  transform-origin: top center;
+}
+html.mobile-hud-lg .hud-scale-bottom-center {
+  transform: scale(2.15);
+  transform-origin: bottom center;
+}
+html.mobile-hud-lg .hud-scale-guide-modal {
+  transform: scale(1.48);
+  transform-origin: center;
+  max-height: 55vh;
+}
+html.mobile-hud-lg .hud-scale-cards {
+  flex-direction: column;
+  transform: scale(2.15);
+  transform-origin: center;
+}
+html.mobile-hud-lg .hud-scale-zone0 {
+  transform: scale(2.15);
+  transform-origin: center;
+}
+html.mobile-hud-lg .hud-scale-soundcloud-wrap {
+  padding-bottom: 240px;
+}
+html.mobile-hud-lg .hud-scale-soundcloud-wrap.is-collapsed {
+  padding-bottom: 36px;
+}
+html.mobile-hud-lg .hud-scale-soundcloud-inner {
+  width: 44%;
+  transform: scale(2.26);
+  transform-origin: top center;
+}
+
 /* Glassmorphism Panel - Sleek Minimalist Aesthetic */
 .glass-panel {
   background: rgba(15, 15, 18, 0.65);
