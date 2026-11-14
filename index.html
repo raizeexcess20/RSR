@@ -2,7 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta id="vp-meta" name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function () {
+        try {
+          if (window.self === window.top) {
+            var w = window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || 0;
+            var sw = (window.screen && window.screen.width) || 0;
+            var sh = (window.screen && window.screen.height) || 0;
+            var isNarrowPortrait = (w > 0 && w !== 980) ? w < 500 : (sw > 0 && sw < 500 && (!sh || sw <= sh));
+            if (isNarrowPortrait) {
+              var vp = document.getElementById('vp-meta');
+              if (vp) vp.setAttribute('content', 'width=500');
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
     <title>RSR</title>
     <meta name="description" content="The Main Community Hub" />
     <meta name="theme-color" content="#00f2fe" />

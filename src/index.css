@@ -7,6 +7,8 @@ html, body {
   touch-action: manipulation;
   overscroll-behavior-y: contain;
   -webkit-touch-callout: none;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 .overflow-y-auto {
@@ -20,10 +22,9 @@ body {
 /* Background Canvas Layer */
 #vortex-canvas {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 1;
   opacity: 1;

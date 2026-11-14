@@ -2543,9 +2543,10 @@ export default function App() {
       let neededBottomLift = 0;
       if (isAtBottomHud && musicBarColRef.current) {
         const barRect = musicBarColRef.current.getBoundingClientRect();
-        const clearanceTargetY = centerY + vortexRevealOffsetY + 118;
-        if (barRect.top < clearanceTargetY) {
-          neededBottomLift = Math.min(height * 0.2, clearanceTargetY - barRect.top);
+        const predictedCenterY = centerY + vortexRevealOffsetY + currentOffsetY + gyroTiltY + analemmaOffsetY;
+        const maxSafeCenterY = barRect.top - 125;
+        if (predictedCenterY > maxSafeCenterY) {
+          neededBottomLift = Math.min(height * 0.26, predictedCenterY - maxSafeCenterY);
         }
       }
       smoothBottomVortexLift += (neededBottomLift - smoothBottomVortexLift) * 0.14;
@@ -4853,7 +4854,7 @@ export default function App() {
       <canvas id="vortex-canvas" ref={canvasRef} />
 
       {/* FIXED TOP-LEFT SLEEK GAMING / MECHANICS GUIDE BUTTON */}
-      <div data-ui-control="true" className="fixed top-3.5 left-3.5 sm:top-6 sm:left-6 z-50 flex items-center gap-2.5">
+      <div data-ui-control="true" className="fixed top-3.5 left-3.5 min-[460px]:top-5 min-[460px]:left-5 sm:top-6 sm:left-6 z-50 flex items-center gap-2.5">
         <button
           onClick={() => {
             setIsGuideOpen(true);
@@ -4879,7 +4880,7 @@ export default function App() {
       {/* FIXED TOP-CENTER MAJESTIC SLIM TIME CONTROL */}
       <div
         data-ui-control="true"
-        className="fixed top-[58px] sm:top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center select-none touch-none pointer-events-auto"
+        className="fixed top-[58px] min-[460px]:top-3.5 sm:top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center select-none touch-none pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Sleek Numeric Speed Display Placed Centered Above Time Controller */}
@@ -4913,7 +4914,7 @@ export default function App() {
             onPointerMove={handleTimePointerMove}
             onPointerUp={handleTimePointerUp}
             onPointerCancel={handleTimePointerUp}
-            className="relative w-40 sm:w-48 h-8 flex flex-col items-center justify-center cursor-pointer group px-2"
+            className="relative w-36 min-[460px]:w-36 sm:w-48 h-8 flex flex-col items-center justify-center cursor-pointer group px-2"
             title={`Temporal Speed: ${timeScale.toFixed(2)}× (Center mark = 1.00×)`}
             aria-label="Cosmic Time Warp Slider"
           >
@@ -5130,7 +5131,7 @@ export default function App() {
       )}
 
       {/* FIXED TOP-RIGHT SLEEK & MINIMALIST SOCIAL BUTTONS */}
-      <div data-ui-control="true" className="fixed top-3.5 right-3.5 sm:top-6 sm:right-6 z-50 flex items-center gap-2 sm:gap-3">
+      <div data-ui-control="true" className="fixed top-3.5 right-3.5 min-[460px]:top-5 min-[460px]:right-5 sm:top-6 sm:right-6 z-50 flex items-center gap-2 sm:gap-3">
         {/* Discord Icon Button */}
         <a
           href="https://discord.gg/JvsWrsCDyK"
