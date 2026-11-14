@@ -10,10 +10,10 @@
             var w = window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || 0;
             var sw = (window.screen && window.screen.width) || 0;
             var sh = (window.screen && window.screen.height) || 0;
-            var isNarrowPortrait = (w > 0 && w !== 980) ? w < 500 : (sw > 0 && sw < 500 && (!sh || sw <= sh));
+            var isNarrowPortrait = (w > 0 && w !== 980) ? w < 445 : (sw > 0 && sw < 445 && (!sh || sw <= sh));
             if (isNarrowPortrait) {
               var vp = document.getElementById('vp-meta');
-              if (vp) vp.setAttribute('content', 'width=500');
+              if (vp) vp.setAttribute('content', 'width=445');
             }
           }
         } catch (e) {}

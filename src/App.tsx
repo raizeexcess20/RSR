@@ -1137,10 +1137,10 @@ export default function App() {
         return;
       }
       const lineRect = lineEl.getBoundingClientRect();
-      const isMobile = window.innerWidth < 640;
-      const nebulaCrestTop = lineRect.top - (isMobile ? 54 : 52);
-      const desired = Math.max(24, Math.ceil(window.innerHeight - nebulaCrestTop + (isMobile ? 12 : 6)));
-      const maxSafe = Math.max(24, window.innerHeight - (isMobile ? 165 : 175));
+      const isCompact = window.innerWidth < 640;
+      const nebulaCrestTop = lineRect.top - 52;
+      const desired = Math.max(24, Math.ceil(window.innerHeight - nebulaCrestTop + (isCompact ? 8 : 6)));
+      const maxSafe = Math.max(24, window.innerHeight - 175);
       setMusicBarBottom(Math.min(desired, maxSafe));
       setShowBottomCue(lineRect.top <= window.innerHeight + 30);
     };
@@ -1507,7 +1507,7 @@ export default function App() {
     // Concave bottom baseline helper: curves upward at both left and right edges, dipping in the center
     const getConcaveBaseY = (xPos: number, anchorY = getPageBottomViewportY()) => {
       const norm = (xPos - width * 0.5) / (width * 0.5 || 1);
-      const archAmp = width < 640 ? 54 : 78;
+      const archAmp = width < 640 ? 64 : 78;
       return anchorY - 48 - (norm * norm) * (archAmp + smoothNebulaArchOffset);
     };
 
@@ -4854,14 +4854,14 @@ export default function App() {
       <canvas id="vortex-canvas" ref={canvasRef} />
 
       {/* FIXED TOP-LEFT SLEEK GAMING / MECHANICS GUIDE BUTTON */}
-      <div data-ui-control="true" className="fixed top-3.5 left-3.5 min-[460px]:top-5 min-[460px]:left-5 sm:top-6 sm:left-6 z-50 flex items-center gap-2.5">
+      <div data-ui-control="true" className="fixed top-4 left-4 min-[430px]:top-5 min-[430px]:left-5 sm:top-6 sm:left-6 z-50 flex items-center gap-2.5">
         <button
           onClick={() => {
             setIsGuideOpen(true);
             setHasOpenedGuide(true);
             requestGyroscopePermission();
           }}
-          className="glass-panel glass-panel-hover group px-2.5 h-9 sm:px-3 sm:h-10 rounded-xl flex items-center gap-2 text-zinc-300 hover:text-white transition-all duration-300 active:scale-95 shadow-lg border border-white/10 hover:border-white/25 cursor-pointer"
+          className="glass-panel glass-panel-hover group px-3 h-10 rounded-xl flex items-center gap-2 text-zinc-300 hover:text-white transition-all duration-300 active:scale-95 shadow-lg border border-white/10 hover:border-white/25 cursor-pointer"
           title="Interactive Vortex Mechanics Guide & Mobile Sensor Controls"
           aria-label="Open Interactive Vortex Controls Guide"
         >
@@ -4880,7 +4880,7 @@ export default function App() {
       {/* FIXED TOP-CENTER MAJESTIC SLIM TIME CONTROL */}
       <div
         data-ui-control="true"
-        className="fixed top-[58px] min-[460px]:top-3.5 sm:top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center select-none touch-none pointer-events-auto"
+        className="fixed top-[62px] min-[430px]:top-8 sm:top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center select-none touch-none pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Sleek Numeric Speed Display Placed Centered Above Time Controller */}
@@ -4914,7 +4914,7 @@ export default function App() {
             onPointerMove={handleTimePointerMove}
             onPointerUp={handleTimePointerUp}
             onPointerCancel={handleTimePointerUp}
-            className="relative w-36 min-[460px]:w-36 sm:w-48 h-8 flex flex-col items-center justify-center cursor-pointer group px-2"
+            className="relative w-36 sm:w-48 h-8 flex flex-col items-center justify-center cursor-pointer group px-2"
             title={`Temporal Speed: ${timeScale.toFixed(2)}× (Center mark = 1.00×)`}
             aria-label="Cosmic Time Warp Slider"
           >
@@ -5131,13 +5131,13 @@ export default function App() {
       )}
 
       {/* FIXED TOP-RIGHT SLEEK & MINIMALIST SOCIAL BUTTONS */}
-      <div data-ui-control="true" className="fixed top-3.5 right-3.5 min-[460px]:top-5 min-[460px]:right-5 sm:top-6 sm:right-6 z-50 flex items-center gap-2 sm:gap-3">
+      <div data-ui-control="true" className="fixed top-4 right-4 min-[430px]:top-5 min-[430px]:right-5 sm:top-6 sm:right-6 z-50 flex items-center gap-2.5 sm:gap-3">
         {/* Discord Icon Button */}
         <a
           href="https://discord.gg/JvsWrsCDyK"
           target="_blank"
           rel="noopener noreferrer"
-          className="glass-panel glass-panel-hover group w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
+          className="glass-panel glass-panel-hover group w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
           title="Discord"
         >
           <svg className="w-4 h-4 fill-current opacity-80 group-hover:opacity-100" viewBox="0 0 127.14 96.36">
@@ -5150,7 +5150,7 @@ export default function App() {
           href="https://t.me/+lRrfWfKoDmljMDU0"
           target="_blank"
           rel="noopener noreferrer"
-          className="glass-panel glass-panel-hover group w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
+          className="glass-panel glass-panel-hover group w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white transition-all duration-300 active:scale-95 shadow-sm"
           title="Telegram"
         >
           <svg className="w-4 h-4 fill-current opacity-80 group-hover:opacity-100" viewBox="0 0 24 24">
@@ -5251,14 +5251,14 @@ export default function App() {
       <div className="h-[120vh] pointer-events-none" />
 
       {/* NEBULA EXPANSE BELOW MUSIC BAR */}
-      <div className="h-8 sm:h-16 pointer-events-none" />
+      <div className="h-12 sm:h-16 pointer-events-none" />
 
       {/* ABSOLUTE BOTTOM SOUNDCLOUD SECTION (SEPARATED BELOW NEBULA BY BLUE BOUNCE LINE, OPEN BY DEFAULT) */}
       <div
         ref={soundCloudSectionRef}
         data-ui-control="true"
         className={`relative z-30 w-full pt-0 flex flex-col items-center ${
-          isSoundCloudOpen ? 'pb-2.5 gap-1.5 sm:pb-4 sm:gap-2' : 'pb-1.5 gap-0'
+          isSoundCloudOpen ? 'pb-3.5 gap-2 sm:pb-4' : 'pb-1.5 gap-0'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -5325,7 +5325,7 @@ export default function App() {
               href="https://soundcloud.com/haris-adnan/metal-gear-rising-revengeance"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] sm:text-[11px] font-mono text-cyan-400/90 hover:text-cyan-300 transition-colors flex items-center justify-center gap-1.5 group cursor-pointer px-3 text-center"
+              className="text-[11px] font-mono text-cyan-400/90 hover:text-cyan-300 transition-colors flex items-center justify-center gap-1.5 group cursor-pointer px-3 text-center"
             >
               <i className="fa-brands fa-soundcloud text-cyan-400/80 text-xs shrink-0 group-hover:scale-110 transition-transform" />
               <span className="underline decoration-cyan-500/35 hover:decoration-cyan-400 break-all">
@@ -5334,7 +5334,7 @@ export default function App() {
             </a>
 
             {/* Alien Subtext below SoundCloud embed & link */}
-            <div className="text-[10px] sm:text-[11px] font-mono tracking-widest text-zinc-300 select-all py-1 px-2.5 sm:py-1.5 sm:px-3 rounded-xl bg-black/70 border border-white/10 break-all shadow-inner mx-3 text-center">
+            <div className="text-[11px] font-mono tracking-widest text-zinc-300 select-all py-1.5 px-3 rounded-xl bg-black/70 border border-white/10 break-all shadow-inner mx-3 text-center">
               !¡ꖎᒷᔑᓭᒷ リ𝙹 ᓵ𝙹!¡ǁ∷╎⊣⍑ℸ!
             </div>
           </div>
@@ -5355,14 +5355,14 @@ export default function App() {
             showBottomCue ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'
           }`}
         >
-          <span className="text-[11px] sm:text-xs font-mono tracking-widest text-zinc-400 font-medium select-none whitespace-nowrap">
+          <span className="text-xs font-mono tracking-widest text-zinc-400 font-medium select-none whitespace-nowrap">
             Go up a bit! IT Awaits You...
           </span>
         </div>
 
         <div
           ref={musicBarPillRef}
-          className="glass-panel px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl flex items-center gap-2.5 sm:gap-3.5 shadow-2xl border border-white/10 max-w-full"
+          className="glass-panel px-4 py-2.5 rounded-2xl flex items-center gap-3.5 shadow-2xl border border-white/10 max-w-full"
         >
           {/* Circular Vinyl Disc: Slow-spinning outer outline + violent pulsating center when playing */}
           <button
@@ -5415,7 +5415,7 @@ export default function App() {
                 * Dot A (Interactive SFX): Pure black dot with black border (controls interactive sounds; completely mutes SFX when far left)
                 * Dot B (Music Volume): Completely white dot (controls background music; completely mutes music when far left)
               - Right: completely white "Music" icon */}
-          <div className="flex items-center gap-2 sm:gap-2.5 border-l border-white/10 pl-2.5 sm:pl-3">
+          <div className="flex items-center gap-2.5 border-l border-white/10 pl-3">
             {/* SFX Volume Indicator Badge on Left: Pure Black with slim white border */}
             <div
               className="w-5 h-5 rounded-full bg-black border border-white/80 flex items-center justify-center shrink-0 shadow-sm"
@@ -5432,7 +5432,7 @@ export default function App() {
               onPointerMove={handleTrackPointerMove}
               onPointerUp={handleTrackPointerUp}
               onPointerCancel={handleTrackPointerUp}
-              className="relative w-20 sm:w-24 h-5 flex items-center cursor-pointer select-none touch-none"
+              className="relative w-24 h-5 flex items-center cursor-pointer select-none touch-none"
               title="Dual Volume Slider: Black dot = Interactive SFX, White dot = Music"
             >
               {/* Background Groove Track */}
